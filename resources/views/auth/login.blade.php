@@ -40,7 +40,7 @@
 
             $('#language_text').html($("#locale_" + locale ).html());
 
-            $('.dropdown-menu').css('width', document.getElementById("language").offsetWidth);
+            // $('.dropdown-menu').css('width', document.getElementById("language").offsetWidth);
 
         });
 

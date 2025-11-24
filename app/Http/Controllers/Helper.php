@@ -514,6 +514,7 @@ class Helper extends Controller
 
     public static function log(Request $request,$action)
     {
+        return;
         try
         {
             $userId = Auth::id();

@@ -87,37 +87,11 @@
         }
 
         prepareCommonLocale();
-        prepareSbLocale();
         timerTick();
 
         audioElement = document.createElement('audio');
         audioElement.setAttribute('muted', true);
-        audioElement.setAttribute('src', '/audio/mpeg/definite.mp3');
-
-        if(auth.getUserType() == 'c')
-        {
-            checkCronStatus();
-            checkResettlement();
-           
-
-            var checkCron = setInterval(checkCronStatus, 10000);
-            var checkResettle  = setInterval(checkResettlement, 10000);
-
-            @can('permissions.edit_sb_manual')
-                checkManualSettlement();
-                var checkManual  = setInterval(checkManualSettlement, 10000);
-
-                createWS();
-
-                Echo.private('sb-settl-approval.{{ Auth::user()->type }}')
-                    .listen('.settl-approval', (e) => 
-                    {
-                        console.log(e.txn_id);
-                        checkManualSettlement();
-                       
-                    }); 
-            @endcan
-        }     
+        audioElement.setAttribute('src', '/audio/mpeg/definite.mp3');    
     });
 
     $(window).resize(function() 
@@ -380,96 +354,6 @@
         locale['reason.23'] = "{!! __('option.reason.23') !!}";
     }
 
-    function checkCronStatus()
-    {
-        $.ajax({
-            type: "GET",
-            url: "/ajax/settings/getCronAlert",
-            success: function(data) 
-            {
-                $("#cron_alert_button").hide();
-                $("#cron_active_button").hide();
-                if(data.cron_count > 0){
-                    alertCount = alertCount + 1;
-                    $("#cron_alert_button").show();
-                    $("#cron_alert_badge").html(data.cron_count);
-                    if(alertCount == 1)
-                    {
-                        audioElement.muted = false;
-                        audioElement.play();
-                    }
-                }
-                else{
-                    $("#cron_active_button").show();
-                }
-            }
-        });
-    }
-
-    function checkResettlement()
-    {
-        $.ajax({
-            type: "GET",
-            url: "/ajax/sb/resettlement/alert",
-            success: function(data) 
-            {
-                $("#resettlement_alert_button").hide();
-                $("#resettlement_active_button").hide();
-
-                if(data.count > 0)
-                {
-                    resettlementAlertCount = resettlementAlertCount + 1;
-
-                    $("#resettlement_alert_button").show();
-                    $("#resettlement_alert_badge").html(data.count);
-
-                    if(resettlementAlertCount == 1)
-                    {
-                        audioElement.muted = false;
-                        audioElement.play();
-                    }
-                }
-                else
-                {
-                    $("#resettlement_active_button").show();
-                }
-            }
-        });
-    }
-
-    function checkManualSettlement()
-    {
-        $.ajax({
-            type: "GET",
-            url: "/ajax/sb/betmanualsettlement/alert",
-            success: function(data) 
-            {
-                $("#manual_alert_button").hide();
-                $("#manual_active_button").hide();
-
-                if(data.count > 0)
-                {
-                    manualAlertCount = manualAlertCount + 1;
-
-                    $("#manual_alert_button").show();
-                    $("#manual_alert_badge").html(data.count);
-
-                    if(manualAlertCount == 1)
-                    {
-                        audioElement.muted = false;
-                        audioElement.play();
-                    }
-                }
-                else
-                {
-                    $("#manual_active_button").show();
-                }
-            }
-        });
-    }
-
-
-
     function createWS()
     {
         window.Echo.options = 
@@ -640,41 +524,7 @@
                     </form>
 
                 </div>
-            </li>   
-
-            @can('system.accounts.admin')
-            <li class="nav-item dropdown">
-                <a class="nav-link nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-                <span title="{{ __('auth.currency') }}" style="color:#000000;">
-                {{ Session::get('app_currency') }}</span>
-                </a>
-                
-                <div class="dropdown-menu dropdown-menu-right">
-
-                    <div class="dropdown-header text-center">
-                        <strong>{{ __('app.header.currency') }}</strong>
-                    </div>
-                    <a class="dropdown-item currency-item" href="#" data-currency="KRW"
-                        onclick="event.preventDefault();
-                                    document.getElementById('currency').value = 'KRW';
-                                    document.getElementById('form-currency').submit();">
-                        KRW
-                    </a>
-
-                    <a class="dropdown-item currency-item" href="#" data-currency="USD"
-                        onclick="event.preventDefault();
-                                    document.getElementById('currency').value = 'USD';
-                                    document.getElementById('form-currency').submit();">
-                        USD
-                    </a>
-
-                    <form id="form-currency" action="{{ route('currency') }}" method="POST" style="display: none;">
-                        @csrf
-                        <input type="hidden" id="currency" name="currency" value="">
-                    </form>
-                </div>
             </li>
-            @endif
 
             <li class="nav-item dropdown">
                 <a class="nav-link nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
@@ -686,13 +536,6 @@
                     <div class="dropdown-header text-center">
                         <strong>{{ __('app.header.language') }}</strong>
                     </div>
-
-                    <a class="dropdown-item" href="#"
-                        onclick="event.preventDefault();
-                                    document.getElementById('locale').value = 'kr';
-                                    document.getElementById('form-locale').submit();">
-                        </i>한국어
-                    </a>
 
                      <a class="dropdown-item" href="#"
                         onclick="event.preventDefault();
@@ -723,23 +566,31 @@
                     </li>
                     @endcan
 
-                    @canany(['permissions.create_merc'])
+                    {{-- @can('system.accounts.admin') --}}
+                    {{-- @canany(['permissions.create_admin','permissions.view_admin_list','permissions.view_maintenance_schedule','permissions.admin_log', 'permissions.cron_status'])  --}}
                     <li class="nav-item nav-dropdown">
-                        <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-user"></i> 
-                            {{ __('app.sidebar.merchants') }}
+                        <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-settings"></i> 
+                            {{ __('app.sidebar.settings') }}
                         </a>
-                    
+                        
                         <ul class="nav-dropdown-items">
-                            @can('permissions.create_merc')
+                            @can('system.accounts.super.admin')
                             <li class="nav-item">
-                                <a class="nav-link" href="/merchants/merchant/new"><i class="icon-user-follow"></i>  
-                                    {{ __('app.sidebar.merchants.create') }}
+                                <a class="nav-link" href="/admins/roles/new"><i class="icon-user-follow"></i>  
+                                    {{ __('app.sidebar.settings.roles.create') }}
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admins/roles"><i class="icon-list"></i> 
+                                    {{ __('app.sidebar.settings.roles.list') }}
                                 </a>
                             </li>
                             @endcan
                         </ul>
                     </li>
-                    @endcan
+                    {{-- @endcan --}}
+                    {{-- @endcan --}}
                 </ul>
             </nav>
 
@@ -754,7 +605,7 @@
     </div>
 
     <footer class="app-footer">
-        <span>© {{ date('Y') }} {{ __('app.sidebar.settings.money_changer') }}</span>
+        <span>© {{ date('Y') }} {{ __('app.footer.money_changer') }}</span>
     </footer>
 
 </body>

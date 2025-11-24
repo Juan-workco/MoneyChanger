@@ -43,6 +43,6 @@ return [
     'modal.success_delete' => 'You have successfully deleted selected item!',
 
     //notes
-    'notes.timezone' => 'Note: The date will be based on time zone GMT+9',
-    'notes.maintenance' => 'Note: Maintenance Time is from 15:00 to 16:00 based on time zone GMT+9',
+    'notes.timezone' => 'Note: The date will be based on time zone GMT+8',
+    'notes.maintenance' => 'Note: Maintenance Time is from 15:00 to 16:00 based on time zone GMT+8',
 ];
