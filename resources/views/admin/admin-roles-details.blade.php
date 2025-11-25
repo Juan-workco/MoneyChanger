@@ -69,7 +69,7 @@ function loadMainData(containerId)
     $("#main-table").show();
 
     var fields = [                           
-                    ["name",locale['mainData.name'],false,false]
+                    ["type",locale['mainData.name'],false,false]
                     ,["edit",locale['mainData.edit'],false,false]
                     ,["delete",locale['mainData.delete'],false,false]
                 ];  

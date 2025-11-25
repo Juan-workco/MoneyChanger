@@ -67,18 +67,18 @@
             if(mainData.results[i]["is_deleted"] == 0)
             {
                 // Check
-                $("#"+mainData.results[i]["name"]).prop("checked", true);
+                $("#"+mainData.results[i]["type"]).prop("checked", true);
 
-                $("#"+mainData.results[i]["name"]).parent().parent().parent().parent().prev('input[type="checkbox"]').prop('checked', true);
-                $("#"+mainData.results[i]["name"]).closest("li:has(li)").children("input[type='checkbox']").prop('checked', true);
+                $("#"+mainData.results[i]["type"]).parent().parent().parent().parent().prev('input[type="checkbox"]').prop('checked', true);
+                $("#"+mainData.results[i]["type"]).closest("li:has(li)").children("input[type='checkbox']").prop('checked', true);
             }
             else
             {
                 // Uncheck
-                $("#"+mainData.results[i]["name"]).prop("checked", false);
+                $("#"+mainData.results[i]["type"]).prop("checked", false);
             }
 
-            check_old.push(mainData.results[i]["name"] + '-' + mainData.results[i]["is_deleted"]);
+            check_old.push(mainData.results[i]["type"] + '-' + mainData.results[i]["is_deleted"]);
             
         }
     }
@@ -250,16 +250,12 @@
                 @csrf
 
                 <div class="card-header">
-                    <strong>{{ __('app.admins.admins_role.create.header') }}</strong>
+                    <strong>{{ __('app.admins.admin.edit.breadcrumb.admins_role.edit') }}</strong>
                 </div>
                 
                 <div class="card-body">
                     <div class="row">
                         <div class="col-sm-4">
-
-                            <div class="heading" style=" margin-bottom: 1rem">
-                                {{ __('app.admins.admins_role.create.details') }} 
-                            </div>
 
                             <div class="form-group row">
                                 <label for="name" class="col-sm-12 col-md-2">{{ __('app.admins.admins_role.create.username') }}</label>
@@ -305,7 +301,7 @@
                 <div class="card-footer">
 
                     <button id="btnSubmit" class="btn btn-primary btn-ladda" data-style="expand-right">
-                        <i class="fa fa-dot-circle-o"></i> {{ __('app.admins.admins_role.create.create') }}
+                        <i class="fa fa-dot-circle-o"></i> {{ __('app.admins.admins_role.create.edit') }}
                     </button>
 
                 </div>

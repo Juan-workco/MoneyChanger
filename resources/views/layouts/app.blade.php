@@ -566,21 +566,23 @@
                     </li>
                     @endcan
 
-                    {{-- @can('system.accounts.admin') --}}
-                    {{-- @canany(['permissions.create_admin','permissions.view_admin_list','permissions.view_maintenance_schedule','permissions.admin_log', 'permissions.cron_status'])  --}}
+                    @can('system.accounts.admin')
+                    @canany(['permissions.create_admin','permissions.view_admin_list','permissions.create_admin_roles','permissions.admin_roles']) 
                     <li class="nav-item nav-dropdown">
                         <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-settings"></i> 
                             {{ __('app.sidebar.settings') }}
                         </a>
                         
                         <ul class="nav-dropdown-items">
-                            @can('system.accounts.super.admin')
+                            @can('permissions.create_admin_roles')
                             <li class="nav-item">
                                 <a class="nav-link" href="/admins/roles/new"><i class="icon-user-follow"></i>  
                                     {{ __('app.sidebar.settings.roles.create') }}
                                 </a>
                             </li>
+                            @endcan
 
+                            @can('permissions.admin_roles')
                             <li class="nav-item">
                                 <a class="nav-link" href="/admins/roles"><i class="icon-list"></i> 
                                     {{ __('app.sidebar.settings.roles.list') }}
@@ -589,8 +591,8 @@
                             @endcan
                         </ul>
                     </li>
-                    {{-- @endcan --}}
-                    {{-- @endcan --}}
+                    @endcan
+                    @endcan
                 </ul>
             </nav>
 

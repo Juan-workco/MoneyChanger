@@ -417,26 +417,26 @@ class AdminController extends Controller
     {
         try
         {
-            $name = $request->input('name');
+            $type = $request->input('name');
             $check = $request->input('check');
           
             //validation
             $errMsg = [];
 
             //check exist type
-            $db = DB::select("SELECT name
+            $db = DB::select("SELECT type
                                 FROM role
-                                WHERE name = ?"
-                                ,[$name]
+                                WHERE type = ?"
+                                ,[$type]
                             );
 
             if(sizeof($db) > 0)
             {
-                array_push($errMsg, "Role exists");
+                array_push($errMsg, "Role Type exists");
             }
 
             //Validate username - must be alphanumeric
-            if(!Helper::checkInputFormat('alphanumeric', $name))
+            if(!Helper::checkInputFormat('alphanumeric', $type))
             {
                 array_push($errMsg, __('error.admin.error_alpha'));
             }
@@ -451,9 +451,9 @@ class AdminController extends Controller
             }
 
             DB::insert("
-                INSERT INTO role(name, created_at)
+                INSERT INTO role(type, created_at)
                 VALUES(?,NOW())
-                ",[$name]);
+                ",[$type]);
 
             $id = DB::getPdo()->lastInsertId();
 
@@ -468,7 +468,7 @@ class AdminController extends Controller
 
             $sql = "
                         INSERT INTO role_permissions
-                        (role_id,name,is_deleted)
+                        (role_id,type,is_deleted)
                         VALUES
                         :(?,?,?):
                         ON DUPLICATE KEY UPDATE 
@@ -505,19 +505,19 @@ class AdminController extends Controller
             $orderBy = $request->input('order_by');
             $orderType = $request->input('order_type');
 
-            $name = $request->input('name');
+            $type = $request->input('name');
 
             $sql = "
-                SELECT id,name
+                SELECT id,type
                 FROM role 
-                WHERE name LIKE :name
+                WHERE type LIKE :type
                 ";
 
             $params = [
-                    'name' => '%'.$name.'%'
+                    'type' => '%'.$type.'%'
                 ];
 
-            $orderByAllow = ['id','name'];
+            $orderByAllow = ['id','type'];
             $orderByDefault = 'id asc';
 
             $sql = Helper::appendOrderBy($sql,$orderBy,$orderType,$orderByAllow,$orderByDefault);
@@ -617,7 +617,7 @@ class AdminController extends Controller
             $id = $request->input('id');
 
             $sql = "
-                SELECT a.name, a.is_deleted, b.name'role_name'
+                SELECT a.type, a.is_deleted, b.type'role_name'
                 FROM role_permissions a
                 LEFT JOIN role b ON a.role_id = b.id
                 WHERE role_id = :id
@@ -627,7 +627,7 @@ class AdminController extends Controller
                     'id' => $id
                 ];
 
-            $orderByAllow = ['name','is_deleted'];
+            $orderByAllow = ['type','is_deleted'];
             $orderByDefault = '';
 
             $sql = Helper::appendOrderBy($sql,$orderBy,$orderType,$orderByAllow,$orderByDefault);
@@ -685,13 +685,13 @@ class AdminController extends Controller
             }
 
             $sql = "
-                        INSERT INTO role_permissions
-                        (role_id,name,is_deleted)
-                        VALUES
-                        :(?,?,?):
-                        ON DUPLICATE KEY UPDATE 
-                        is_deleted = VALUES(is_deleted)
-                        ";
+                INSERT INTO role_permissions
+                (role_id,type,is_deleted)
+                VALUES
+                :(?,?,?):
+                ON DUPLICATE KEY UPDATE 
+                is_deleted = VALUES(is_deleted)
+            ";
 
             $pdo = Helper::prepareBulkInsert($sql,$paramsPermission);
 

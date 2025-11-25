@@ -69,25 +69,26 @@ class Helper extends Controller
 
         $db = DB::SELECT("
 
-                            SELECT b.is_deleted 
+                            SELECT * 
                             FROM admin_role a 
                             LEFT JOIN role b 
                                 ON a.role_id = b.id
-                            WHERE a.admin_id = ? AND b.is_deleted = 0
+                            WHERE a.admin_id = ?
                          ", [$userId]
                         );
 
         if(sizeof($db) > 0)
         {
              $db = DB::SELECT("
-
-                            SELECT a.is_deleted 
-                            FROM role_permissions a 
-                            LEFT JOIN admin_role b 
-                                ON a.role_id = b.role_id
-                            WHERE b.admin_id = ? AND a.type = ? AND a.is_deleted = 1
-                         ", [$userId, $type]
-                        );
+                SELECT b.is_deleted
+                FROM admin_role a
+                INNER JOIN role_permissions b
+                    ON a.role_id = b.role_id
+                WHERE a.admin_id = ?
+                    AND b.type = ?
+                    AND is_deleted = 1
+                ", [$userId, $type]
+            );
 
             if (sizeOf($db) != 0) 
             {
@@ -102,11 +103,16 @@ class Helper extends Controller
     {
         $userId = Auth::user()->id;
         $db = DB::SELECT("
-                            SELECT is_deleted
-                            FROM permissions
-                            WHERE admin_id =? AND type = ? AND is_deleted = 1
-                         ", [$userId, $type]
-                        );
+            SELECT b.is_deleted
+            FROM admin_role a
+            INNER JOIN role_permissions b
+                ON a.role_id = b.role_id
+            WHERE a.admin_id = ?
+                AND b.type = ?
+                AND is_deleted = 1
+            ", [$userId, $type]
+        );
+
         if (sizeOf($db) != 0) 
         {
            return false;

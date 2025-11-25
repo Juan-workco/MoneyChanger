@@ -42,5 +42,15 @@ class AuthServiceProvider extends ServiceProvider
            return $user->type == 'c' || $user->type == 'm' ?  true : false;
 
         });
+
+        Gate::define('permissions.create_admin_roles', function ($user) 
+        {
+           return Helper::checkPermissions('create_admin_roles');
+        });
+
+        Gate::define('permissions.admin_roles', function ($user) 
+        {
+           return Helper::checkPermissions('admin_roles');
+        });
     }
 }
