@@ -384,14 +384,16 @@
 
                     @can('system.accounts.admin')
                     <li class="nav-item nav-dropdown">
-                        <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-settings"></i> 
+                        <a class="nav-link nav-dropdown-toggle" href="#">
+                            <i class="fa fa-money"></i> 
                             {{ __('app.sidebar.currency') }}
                         </a>
                         
                         <ul class="nav-dropdown-items">
                             @can('permissions.create_admin_roles')
                             <li class="nav-item">
-                                <a class="nav-link" href="/currency/new"><i class="icon-user-follow"></i>  
+                                <a class="nav-link" href="/currency/new">
+                                    <i class="fa fa-plus"></i>  
                                     {{ __('app.sidebar.currency.new') }}
                                 </a>
                             </li>
@@ -399,7 +401,8 @@
 
                             @can('permissions.admin_roles')
                             <li class="nav-item">
-                                <a class="nav-link" href="/currency/list"><i class="icon-list"></i> 
+                                <a class="nav-link" href="/currency/list">
+                                    <i class="icon-list"></i> 
                                     {{ __('app.sidebar.currency.list') }}
                                 </a>
                             </li>

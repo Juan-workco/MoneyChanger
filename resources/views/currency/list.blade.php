@@ -150,6 +150,7 @@ function showEditModal()
 
     let rowId = this.rowId;
     let data = mainData.results[rowId - 1];
+    let id = data['id'];
     let code = data['code'];
     let name = data['name'];
     let symbol = data['symbol'];
@@ -157,14 +158,13 @@ function showEditModal()
     let sellRate = data['sell_rate'];
     let status = data['status'];
 
+    $("#modalEdit #id").val(id);
     $("#modalEdit #code").val(code);
     $("#modalEdit #name").val(name);
     $("#modalEdit #symbol").val(symbol);
     $("#modalEdit #buy_rate").val(utils.formatMoney(buyRate, 4));
     $("#modalEdit #sell_rate").val(utils.formatMoney(sellRate, 4));
     $("#modalEdit #status").val(status);
-    
-    $("#modalEdit #code").attr('disabled', true);
 
     $("#modalEdit").modal("show");
 
@@ -177,8 +177,6 @@ function submitEditModal()
 {
     $("#modalEdit").modal('hide');
     $("#editForm").attr("enabled",0);
-
-    $("#modalEdit #code").attr('disabled', false);
         
     utils.startLoadingBtn("btnSubmit","editForm");
 
@@ -320,6 +318,8 @@ function onMainModalDismissError()
             <div class="modal-body">
                 <form id="editForm">
                     @csrf
+
+                    <input type="hidden" id="id" name="id">
 
                     <div class="mb-3">
                         <label for="code" class="form-label fw-bold">Currency Code</label>

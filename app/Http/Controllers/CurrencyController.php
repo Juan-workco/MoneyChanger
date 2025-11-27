@@ -43,10 +43,12 @@ class CurrencyController extends Controller
             $name = ($name === null) ? "%" : "%$name%";
 
             $sql = "
-                SELECT code, name, symbol, buy_rate, sell_rate, status 
-                FROM currencies
-                WHERE code LIKE :code
-                    OR name LIKE :name
+                SELECT a.id, a.code, a.name, a.status, a.symbol, b.buy_rate, b.sell_rate
+                FROM currencies a
+                INNER JOIN exchange_rates b
+                    ON a.id = b.currency_id
+                WHERE a.code LIKE :code
+                    OR a.name LIKE :name
             ";
 
             $params = [
@@ -124,9 +126,16 @@ class CurrencyController extends Controller
             }
 
             DB::INSERT("
-                INSERT INTO currencies (`code`, `name`, `symbol`, `buy_rate`, `sell_rate`, `status`, `created_at`)
-                VALUES (?, ?, ?, ?, ?, ?, NOW())
-            ", [$code, $name, $symbol, $buyRate, $sellRate, $status]);
+                INSERT INTO currencies (`code`, `name`, `symbol`, `status`, `created_at`)
+                VALUES (?, ?, ?, ?, NOW())
+            ", [$code, $name, $symbol, $status]);
+
+            $currencyId = DB::getPdo()->lastInsertId();
+
+            DB::INSERT("
+                INSERT INTO exchange_rates (`currency_id`, `buy_rate`, `sell_rate`, `created_at`)
+                VALUES (?, ?, ?, NOW())
+            ", [$currencyId, $buyRate, $sellRate]);
 
             return json_encode(['status' => 1]);
         }
@@ -141,18 +150,17 @@ class CurrencyController extends Controller
     {
         try
         {
-            $code = $request->input('code');
+            $id = $request->input('id');
             $name = $request->input('name');
             $symbol = $request->input('symbol');
             $buyRate = $request->input('buy_rate');
             $sellRate = $request->input('sell_rate');
             $status = $request->input('status');
 
-            $code = strtoupper( trim($code) );
             $name = trim($name);
             $symbol = trim($symbol);
             
-            $db = DB::SELECT("SELECT 1 FROM currencies WHERE code = ?", [$code]);
+            $db = DB::SELECT("SELECT 1 FROM currencies WHERE id = ?", [$id]);
 
             if (count($db) == 0)
             {
@@ -188,12 +196,18 @@ class CurrencyController extends Controller
                 UPDATE currencies 
                 SET name = ?,
                     symbol = ?,
-                    buy_rate = ?,
-                    sell_rate = ?,
                     status = ?,
                     updated_at = NOW()
-                WHERE code = ?
-            ", [$name, $symbol, $buyRate, $sellRate, $status, $code]);
+                WHERE id = ?
+            ", [$name, $symbol, $status, $id]);
+
+            DB::UPDATE("
+                UPDATE exchange_rates 
+                SET buy_rate = ?,
+                    sell_rate = ?,
+                    updated_at = NOW()
+                WHERE currency_id = ?
+            ", [$buyRate, $sellRate, $id]);
 
             return json_encode(['status' => 1]);
         }
