@@ -150,7 +150,6 @@
 
     function onMainModalDismiss()
     {
-
         window.location.href = "/admins/roles";
     }
 

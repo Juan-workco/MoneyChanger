@@ -9,6 +9,10 @@ return [
     'datatable.total' => 'Total',
     'datatable.pagetotal' => 'Page Total',
 
+    // Main Data
+    'maindata.action' => 'Action',
+    'maindata.edit' => 'Edit',
+
     //filter box
     'filter.title' => 'Filter',
     'filter.submit' => 'Filter',
@@ -30,6 +34,8 @@ return [
     'filter.cancelbet' => 'Cancel Bet',
     'filter.rejectedbet' => 'Rejected Bet',
     'filter.special' => 'Special',
+    'filter.name' => 'Name',
+    'filter.currency.code' => 'Code',
 
 
     //modal box

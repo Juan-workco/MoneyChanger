@@ -164,194 +164,10 @@
         locale['utils.datetime.day.4'] = "{!! __('app.header.thur') !!}";
         locale['utils.datetime.day.5'] = "{!! __('app.header.fri') !!}";
         locale['utils.datetime.day.6'] = "{!! __('app.header.sat') !!}";
-    }
 
-    function prepareSbLocale()
-    {
-        //sb bet details
-        locale['mainData.number'] = "NO";
-        locale['mainData.date'] = "Date";
-        locale['mainData.bet_type'] = "BetType";
-        locale['mainData.game'] = "Game";
-        locale['mainData.competition'] = "Competition";
-        locale['mainData.result'] = "Result";
-        locale['mainData.username'] = "Username";
-        locale['mainData.bet_time'] = "Bet Time";
-        locale['mainData.bet_no'] = "Bet No";
-        locale['mainData.odds'] = "Odds";
-        locale['mainData.stake'] = "Stake";
-        locale['mainData.max_win'] = "Payout";
-        locale['mainData.home_team'] = "Home Team";
-        locale['mainData.away_team'] = "Away Team";
-        locale['mainData.win_lose'] = "W/L";
-        locale['mainData.status'] = "Status";
-
-        locale['event.bettype.match.Ordinary Time'] = "{!! __('app.events.main.bet.match.Ordinary Time') !!}";
-        locale['event.bettype.match.Whole Match'] = "{!! __('app.events.main.bet.match.Whole Match') !!}";
-        locale['event.bettype.match.1st Half (Ordinary Time)'] = "{!! __('app.events.main.bet.match.1st Half (Ordinary Time)') !!}";
-        locale['event.bettype.match.2nd Half (Ordinary Time)'] = "{!! __('app.events.main.bet.match.2nd Half (Ordinary Time)') !!}";
-        locale['event.bettype.match.Overtime Excluding Penalty Round'] = "{!! __('app.events.main.bet.match.Overtime Excluding Penalty Round') !!}";
-
-        locale['event.bettype.match.hometeam'] = "{!! __('app.events.main.bet.match.hometeam') !!}";
-        locale['event.bettype.match.awayteam'] = "{!! __('app.events.main.bet.match.awayteam') !!}";
-
-        locale['event.bettype.match.1st Set'] = "{!! __('app.events.main.bet.match.1st Set') !!}";
-        locale['event.bettype.match.2nd Set'] = "{!! __('app.events.main.bet.match.2nd Set') !!}";
-        locale['event.bettype.match.3rd Set'] = "{!! __('app.events.main.bet.match.3rd Set') !!}";
-        locale['event.bettype.match.4th Set'] = "{!! __('app.events.main.bet.match.4th Set') !!}";
-        locale['event.bettype.match.5th Set'] = "{!! __('app.events.main.bet.match.5th Set') !!}";
-
-        locale['event.bettype.match.1st Inning'] = "{!! __('app.events.main.bet.match.1st Inning') !!}";
-        locale['event.bettype.match.2nd Inning'] = "{!! __('app.events.main.bet.match.2nd Inning') !!}";
-        locale['event.bettype.match.3rd Inning'] = "{!! __('app.events.main.bet.match.3rd Inning') !!}";
-        locale['event.bettype.match.4th Inning'] = "{!! __('app.events.main.bet.match.4th Inning') !!}";
-        locale['event.bettype.match.5th Inning'] = "{!! __('app.events.main.bet.match.5th Inning') !!}";
-        locale['event.bettype.match.6th Inning'] = "{!! __('app.events.main.bet.match.6th Inning') !!}";
-        locale['event.bettype.match.7th Inning'] = "{!! __('app.events.main.bet.match.7th Inning') !!}";
-        locale['event.bettype.match.8th Inning'] = "{!! __('app.events.main.bet.match.8th Inning') !!}";
-        locale['event.bettype.match.9th Inning'] = "{!! __('app.events.main.bet.match.9th Inning') !!}";
-
-        locale['event.bettype.match.First Three Innings'] = "{!! __('app.events.main.bet.match.First Three Innings') !!}";
-        locale['event.bettype.match.First Five Innings'] = "{!! __('app.events.main.bet.match.First Five Innings') !!}";
-        locale['event.bettype.match.First Seven Innings'] = "{!! __('app.events.main.bet.match.First Seven Innings') !!}";
-
-        locale['event.bettype.match.1st Quarter'] = "{!! __('app.events.main.bet.match.1st Quarter') !!}";
-        locale['event.bettype.match.2nd Quarter'] = "{!! __('app.events.main.bet.match.2nd Quarter') !!}";
-        locale['event.bettype.match.3rd Quarter'] = "{!! __('app.events.main.bet.match.3rd Quarter') !!}";
-        locale['event.bettype.match.4th Quarter'] = "{!! __('app.events.main.bet.match.4th Quarter') !!}";
-
-        locale['event.bettype.match.1st Period'] = "{!! __('app.events.main.bet.match.1st Period') !!}";
-        locale['event.bettype.match.2nd Period'] = "{!! __('app.events.main.bet.match.2nd Period') !!}";
-        locale['event.bettype.match.3rd Period'] = "{!! __('app.events.main.bet.match.3rd Period') !!}";
-
-        locale['event.bettype.match.Map 1'] = "{!! __('app.events.main.bet.match.Map 1') !!}";
-        locale['event.bettype.match.Map 2'] = "{!! __('app.events.main.bet.match.Map 2') !!}";
-        locale['event.bettype.match.Map 3'] = "{!! __('app.events.main.bet.match.Map 3') !!}";
-        locale['event.bettype.match.Map 4'] = "{!! __('app.events.main.bet.match.Map 4') !!}";
-        locale['event.bettype.match.Map 5'] = "{!! __('app.events.main.bet.match.Map 5') !!}";
-        locale['event.bettype.match.Ordinary Time (Map 1)'] = "{!! __('app.events.main.bet.match.Map 1') !!}";
-        locale['event.bettype.match.Ordinary Time (Map 2)'] = "{!! __('app.events.main.bet.match.Map 2') !!}";
-        locale['event.bettype.match.Ordinary Time (Map 3)'] = "{!! __('app.events.main.bet.match.Map 3') !!}";
-        locale['event.bettype.match.Ordinary Time (Map 4)'] = "{!! __('app.events.main.bet.match.Map 4') !!}";
-        locale['event.bettype.match.Ordinary Time (Map 5)'] = "{!! __('app.events.main.bet.match.Map 5') !!}";
-
-        locale['maindata.bettype.Over'] = "{!! __('app.sb.bettype.over') !!}";
-        locale['maindata.bettype.Under'] = "{!! __('app.sb.bettype.under') !!}";
-
-        //display period
-        locale['event.match.minute'] = "{!! __('app.main.event.match.minute') !!}";
-        locale['event.match.minute2'] = "{!! __('app.main.event.match.minute2') !!}";
-
-        locale['event.match.1st Half (Ordinary Time)'] = "{!! __('app.main.event.match.1st Half (Ordinary Time)') !!}";
-        locale['event.match.2nd Half (Ordinary Time)'] = "{!! __('app.main.event.match.2nd Half (Ordinary Time)') !!}";
-        locale['event.match.1st Half (Overtime)'] = "{!! __('app.main.event.match.1st Half (Overtime)') !!}";
-        locale['event.match.2nd Half (Overtime)'] = "{!! __('app.main.event.match.2nd Half (Overtime)') !!}";
-        locale['event.match.Halftime'] = "{!! __('app.main.event.match.halftime') !!}";
-
-        locale['event.match.1st Quarter'] = "{!! __('app.main.event.match.1st_quarter') !!}";
-        locale['event.match.2nd Quarter'] = "{!! __('app.main.event.match.2nd_quarter') !!}";
-        locale['event.match.3rd Quarter'] = "{!! __('app.main.event.match.3rd_quarter') !!}";
-        locale['event.match.4th Quarter'] = "{!! __('app.main.event.match.4th_quarter') !!}";
-        locale['event.match.Overtime'] = "{!! __('app.main.event.match.overtime') !!}";
-        locale['event.match.Overtime Excluding Penalty Round'] = "{!! __('app.main.event.match.overtime') !!}";
-        locale['event.match.1st Intermission'] = "{!! __('app.main.event.match.1st_intermission') !!}";
-        locale['event.match.2nd Intermission'] = "{!! __('app.main.event.match.2nd_intermission') !!}";
-        locale['event.match.3rd Intermission'] = "{!! __('app.main.event.match.3rd_intermission') !!}";
-        locale['event.match.4th Intermission'] = "{!! __('app.main.event.match.4th_intermission') !!}";
-        locale['event.match.current_part.live'] = "{!! __('app.main.event.match.current_part.live') !!}";
-        
-        locale['event.match.baseball.1st Intermission'] = "{!! __('app.main.event.match.baseball.1st_intermission') !!}";
-        locale['event.match.baseball.2nd Intermission'] = "{!! __('app.main.event.match.baseball.2nd_intermission') !!}";
-        locale['event.match.baseball.3rd Intermission'] = "{!! __('app.main.event.match.baseball.3rd_intermission') !!}";
-        locale['event.match.baseball.4th Intermission'] = "{!! __('app.main.event.match.baseball.4th_intermission') !!}";
-        locale['event.match.baseball.5th Intermission'] = "{!! __('app.main.event.match.baseball.5th_intermission') !!}";
-        locale['event.match.baseball.6th Intermission'] = "{!! __('app.main.event.match.baseball.6th_intermission') !!}";
-        locale['event.match.baseball.7th Intermission'] = "{!! __('app.main.event.match.baseball.7th_intermission') !!}";
-        locale['event.match.baseball.8th Intermission'] = "{!! __('app.main.event.match.baseball.8th_intermission') !!}";
-
-        locale['event.match.1st Inning'] = "{!! __('app.main.event.match.1st Inning') !!}";
-        locale['event.match.2nd Inning'] = "{!! __('app.main.event.match.2nd Inning') !!}";
-        locale['event.match.3rd Inning'] = "{!! __('app.main.event.match.3rd Inning') !!}";
-        locale['event.match.4th Inning'] = "{!! __('app.main.event.match.4th Inning') !!}";
-        locale['event.match.5th Inning'] = "{!! __('app.main.event.match.5th Inning') !!}";
-        locale['event.match.6th Inning'] = "{!! __('app.main.event.match.6th Inning') !!}";
-        locale['event.match.7th Inning'] = "{!! __('app.main.event.match.7th Inning') !!}";
-        locale['event.match.8th Inning'] = "{!! __('app.main.event.match.8th Inning') !!}";
-        locale['event.match.9th Inning'] = "{!! __('app.main.event.match.9th Inning') !!}";
-        locale['event.match.First Three Innings'] = "{!! __('app.main.event.match.First Three Innings') !!}";
-        locale['event.match.First Five Innings'] = "{!! __('app.main.event.match.First Five Innings') !!}";
-        locale['event.match.First Seven Innings'] = "{!! __('app.main.event.match.First Seven Innings') !!}";
-
-        locale['event.match.Top 1'] = "{!! __('app.main.event.match.Top 1') !!}";
-        locale['event.match.Top 2'] = "{!! __('app.main.event.match.Top 2') !!}";
-        locale['event.match.Top 3'] = "{!! __('app.main.event.match.Top 3') !!}";
-        locale['event.match.Top 4'] = "{!! __('app.main.event.match.Top 4') !!}";
-        locale['event.match.Top 5'] = "{!! __('app.main.event.match.Top 5') !!}";
-        locale['event.match.Top 6'] = "{!! __('app.main.event.match.Top 6') !!}";
-        locale['event.match.Top 7'] = "{!! __('app.main.event.match.Top 7') !!}";
-        locale['event.match.Top 8'] = "{!! __('app.main.event.match.Top 8') !!}";
-        locale['event.match.Top 9'] = "{!! __('app.main.event.match.Top 9') !!}";
-
-        locale['event.match.break'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 1'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 2'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 3'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 4'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 5'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 6'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 7'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 8'] = "{!! __('app.main.event.match.break') !!}";
-        locale['event.match.Break 9'] = "{!! __('app.main.event.match.break') !!}";
-
-        locale['event.match.Bottom 1'] = "{!! __('app.main.event.match.Bottom 1') !!}";
-        locale['event.match.Bottom 2'] = "{!! __('app.main.event.match.Bottom 2') !!}";
-        locale['event.match.Bottom 3'] = "{!! __('app.main.event.match.Bottom 3') !!}";
-        locale['event.match.Bottom 4'] = "{!! __('app.main.event.match.Bottom 4') !!}";
-        locale['event.match.Bottom 5'] = "{!! __('app.main.event.match.Bottom 5') !!}";
-        locale['event.match.Bottom 6'] = "{!! __('app.main.event.match.Bottom 6') !!}";
-        locale['event.match.Bottom 7'] = "{!! __('app.main.event.match.Bottom 7') !!}";
-        locale['event.match.Bottom 8'] = "{!! __('app.main.event.match.Bottom 8') !!}";
-        locale['event.match.Bottom 9'] = "{!! __('app.main.event.match.Bottom 9') !!}";
-
-        locale['event.match.1st Period'] = "{!! __('app.main.event.match.1st Period') !!}";
-        locale['event.match.2nd Period'] = "{!! __('app.main.event.match.2nd Period') !!}";
-        locale['event.match.3rd Period'] = "{!! __('app.main.event.match.3rd Period') !!}";
-        locale['event.match.timeout'] = "{!! __('app.main.event.match.timeout') !!}";
-
-        locale['event.match.1st'] = "{!! __('app.main.event.match.1stset') !!}";
-        locale['event.match.2nd'] = "{!! __('app.main.event.match.2ndset') !!}";
-        locale['event.match.3rd'] = "{!! __('app.main.event.match.3rdset') !!}";
-        locale['event.match.4th'] = "{!! __('app.main.event.match.4thset') !!}";
-        locale['event.match.5th'] = "{!! __('app.main.event.match.5thset') !!}";
-
-        locale['event.match.Map 1'] = "{!! __('app.events.main.bet.match.Map 1') !!}";
-        locale['event.match.Map 2'] = "{!! __('app.events.main.bet.match.Map 2') !!}";
-        locale['event.match.Map 3'] = "{!! __('app.events.main.bet.match.Map 3') !!}";
-        locale['event.match.Map 4'] = "{!! __('app.events.main.bet.match.Map 4') !!}";
-        locale['event.match.Map 5'] = "{!! __('app.events.main.bet.match.Map 5') !!}";
-        locale['event.match.Ordinary Time (Map 1)'] = "{!! __('app.events.main.bet.match.Map 1') !!}";
-        locale['event.match.Ordinary Time (Map 2)'] = "{!! __('app.events.main.bet.match.Map 2') !!}";
-        locale['event.match.Ordinary Time (Map 3)'] = "{!! __('app.events.main.bet.match.Map 3') !!}";
-        locale['event.match.Ordinary Time (Map 4)'] = "{!! __('app.events.main.bet.match.Map 4') !!}";
-        locale['event.match.Ordinary Time (Map 5)'] = "{!! __('app.events.main.bet.match.Map 5') !!}";
-
-        //modal
         locale['info'] = "{!! __('common.modal.info') !!}";
         locale['success'] = "{!! __('common.modal.success') !!}";
         locale['error'] = "{!! __('common.modal.error') !!}";
-
-        locale['reason.1'] = "{!! __('option.reason.1') !!}";
-        locale['reason.3'] = "{!! __('option.reason.3') !!}";
-        locale['reason.4'] = "{!! __('option.reason.4') !!}";
-        locale['reason.7'] = "{!! __('option.reason.7') !!}";
-        locale['reason.11'] = "{!! __('option.reason.11') !!}";
-        locale['reason.13'] = "{!! __('option.reason.13') !!}";
-        locale['reason.15'] = "{!! __('option.reason.15') !!}";
-        locale['reason.16'] = "{!! __('option.reason.16') !!}";
-        locale['reason.18'] = "{!! __('option.reason.18') !!}";
-        locale['reason.21'] = "{!! __('option.reason.21') !!}";
-        locale['reason.22'] = "{!! __('option.reason.22') !!}";
-        locale['reason.23'] = "{!! __('option.reason.23') !!}";
     }
 
     function createWS()
@@ -563,6 +379,32 @@
                     @can('system.accounts.all')
                     <li class="nav-item">
                         <a class="nav-link" href="/home"><i class="icon-home"></i> {{ __('app.sidebar.home') }}</a>
+                    </li>
+                    @endcan
+
+                    @can('system.accounts.admin')
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-settings"></i> 
+                            {{ __('app.sidebar.currency') }}
+                        </a>
+                        
+                        <ul class="nav-dropdown-items">
+                            @can('permissions.create_admin_roles')
+                            <li class="nav-item">
+                                <a class="nav-link" href="/currency/new"><i class="icon-user-follow"></i>  
+                                    {{ __('app.sidebar.currency.new') }}
+                                </a>
+                            </li>
+                            @endcan
+
+                            @can('permissions.admin_roles')
+                            <li class="nav-item">
+                                <a class="nav-link" href="/currency/list"><i class="icon-list"></i> 
+                                    {{ __('app.sidebar.currency.list') }}
+                                </a>
+                            </li>
+                            @endcan
+                        </ul>
                     </li>
                     @endcan
 

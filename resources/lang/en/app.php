@@ -58,6 +58,10 @@ return [
     'sidebar.admin.list' => 'Admin List',
     'sidebar.admin.admin_roles' => 'Admin Roles',
 
+    'sidebar.currency' => 'Currency',
+    'sidebar.currency.new' => 'Create Currency',
+    'sidebar.currency.list' => 'Currency List',
+
     'sidebar.settings' => 'Settings',
     'sidebar.settings.admin.create' => 'Create Admin',
     'sidebar.settings.admin.list' => 'Admins List',
@@ -100,6 +104,18 @@ return [
     'home.totalturnover' => 'TOTAL TURNOVER',
     'home.totalwinloss' => 'TOTAL WINLOSS',
     'home.totalmemberbet' => 'TOTAL MEMBER BET',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Currency
+    |--------------------------------------------------------------------------
+    */
+
+    'currency.breadcrumb.currency' => 'Currency',
+    'currency.breadcrumb.currency.create' => 'Create Currency',
+    'currency.breadcrumb.currency.list' => 'Currency List',
+
+    'currency.modal.title.edit' => 'Edit Currency',
 
     /*
     |--------------------------------------------------------------------------

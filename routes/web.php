@@ -67,6 +67,19 @@ Route::get('/dashboard', 'ViewControllers\DashboardViewController@index');
 
 /*
 |--------------------------------------------------------------------------
+| Currency Routes
+|--------------------------------------------------------------------------
+ */
+
+Route::get('/currency/new', 'ViewControllers\CurrencyViewController@new');
+Route::post('/ajax/currency/create', 'ViewControllers\CurrencyViewController@createCurrency');
+
+Route::get('/currency/list', 'ViewControllers\CurrencyViewController@index');
+Route::get('/ajax/currency/list', 'ViewControllers\CurrencyViewController@getList');
+Route::post('/ajax/currency/edit', 'ViewControllers\CurrencyViewController@edit');
+
+/*
+|--------------------------------------------------------------------------
 | Admin Routes
 |--------------------------------------------------------------------------
  */
