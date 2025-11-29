@@ -95,3 +95,19 @@ Route::get('/ajax/admins/roles/list', 'ViewControllers\AdminViewController@getRo
 Route::post('/ajax/admins/roles/delete', 'ViewControllers\AdminViewController@deleteRole');
 Route::get('/ajax/admins/roles/permission', 'ViewControllers\AdminViewController@getRolesPermission');
 Route::post('/ajax/admins/roles/update', 'ViewControllers\AdminViewController@editRolesPermission');
+
+/*
+|--------------------------------------------------------------------------
+| Currency Routes
+|--------------------------------------------------------------------------
+ */
+
+Route::get('/payment/method', 'ViewControllers\PaymentViewController@paymentMethod');
+Route::get('/ajax/payment/method/list', 'ViewControllers\PaymentViewController@getPaymentMethodList');
+Route::post('/ajax/payment/method/new', 'ViewControllers\PaymentViewController@createPaymentMethod');
+Route::post('/ajax/payment/method/update', 'ViewControllers\PaymentViewController@updatePaymentMethod');
+
+Route::get('/payment/account', 'ViewControllers\PaymentViewController@paymentAccount');
+Route::get('/ajax/payment/account/list', 'ViewControllers\PaymentViewController@getPaymentAccountList');
+Route::post('/ajax/payment/account/new', 'ViewControllers\PaymentViewController@createPaymentAccount');
+

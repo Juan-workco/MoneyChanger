@@ -204,35 +204,9 @@
             }
         }
 
-        #modal-sb-details .modal-lg
+        .sidebar .nav-dropdown .nav-dropdown-items .nav-item .nav-link
         {
-            max-width: 1250px;
-        }
-
-        #modal-sb-details .bg-info
-        {
-            color:black !important;
-        }
-
-        #modal-sb-details a
-        {
-            color: #1877f2;
-        }
-
-        #modal-sb-details table 
-        {
-            width: 100%;
-        }
-
-        #modal-sb-details .modal-body 
-        {
-            overflow-y: auto;
-            max-height: 550px;
-        }
-
-        #modal-sb-details td .span
-        {
-            white-space: nowrap;
+            padding-left: 1.8rem;
         }
 
         table a
@@ -412,6 +386,31 @@
                     @endcan
 
                     @can('system.accounts.admin')
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle" href="#">
+                            <i class="fa fa-university"></i> 
+                            {{ __('app.sidebar.payment') }}
+                        </a>
+                        
+                        <ul class="nav-dropdown-items">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/payment/method">
+                                    <i class="fa fa-credit-card"></i> 
+                                    {{ __('app.sidebar.payment.method') }}
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="/payment/account">
+                                    <i class="fa fa-address-book-o"></i> 
+                                    {{ __('app.sidebar.payment.account') }}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    @endcan
+
+                    @can('system.accounts.admin')
                     @canany(['permissions.create_admin','permissions.view_admin_list','permissions.create_admin_roles','permissions.admin_roles']) 
                     <li class="nav-item nav-dropdown">
                         <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-settings"></i> 
@@ -422,7 +421,7 @@
                             @can('permissions.create_admin_roles')
                             <li class="nav-item">
                                 <a class="nav-link" href="/admins/roles/new"><i class="icon-user-follow"></i>  
-                                    {{ __('app.sidebar.settings.roles.create') }}
+                                    {{ __('app.sidebar.settings.admin.roles.create') }}
                                 </a>
                             </li>
                             @endcan
@@ -430,7 +429,7 @@
                             @can('permissions.admin_roles')
                             <li class="nav-item">
                                 <a class="nav-link" href="/admins/roles"><i class="icon-list"></i> 
-                                    {{ __('app.sidebar.settings.roles.list') }}
+                                    {{ __('app.sidebar.settings.admin.roles.list') }}
                                 </a>
                             </li>
                             @endcan

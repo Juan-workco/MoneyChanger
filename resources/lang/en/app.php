@@ -67,8 +67,12 @@ return [
     'sidebar.settings.admin.list' => 'Admins List',
     'sidebar.settings.translation' => 'Translations',
 
-    'sidebar.settings.roles.create' => 'Create Admin Roles',
-    'sidebar.settings.roles.list' => 'Admins Roles',
+    'sidebar.settings.admin.roles.create' => 'Create Admin Roles',
+    'sidebar.settings.admin.roles.list' => 'Admins Roles',
+
+    'sidebar.payment' => 'Payment',
+    'sidebar.payment.method' => 'Payment Method',
+    'sidebar.payment.account' => 'Receive Account',
 
 
 
@@ -116,6 +120,26 @@ return [
     'currency.breadcrumb.currency.list' => 'Currency List',
 
     'currency.modal.title.edit' => 'Edit Currency',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment
+    |--------------------------------------------------------------------------
+    */
+
+    'payment.breadcrumb.payment' => 'Payment',
+    'payment.breadcrumb.payment.method.list' => 'Payment Method',
+    'payment.breadcrumb.payment.account.list' => 'Payment Account',
+
+    'payment.modal.payment.method.title.add' => 'Add Payment Method',
+    'payment.modal.payment.method.title.status_change' => 'Change Payment Method Status',
+
+    'payment.modal.payment.account.title.add' => 'Add Payment Account',
+    'payment.modal.payment.account.title.edit' => 'Edit Payment Account',
+
+    'payment.filter.method' => 'Method',
+    'payment.filter.name' => 'Name',
+    'payment.filter.account' => 'Account',
 
     /*
     |--------------------------------------------------------------------------

@@ -12,6 +12,8 @@ return [
     // Main Data
     'maindata.action' => 'Action',
     'maindata.edit' => 'Edit',
+    'maindata.add' => 'Add',
+    'maindata.confirm' => 'Confirm',
 
     //filter box
     'filter.title' => 'Filter',
@@ -31,7 +33,6 @@ return [
     'filter.live' => 'Live',
     'filter.prematch' => 'Prematch',
     'filter.apply' => 'Apply All',
-    'filter.cancelbet' => 'Cancel Bet',
     'filter.rejectedbet' => 'Rejected Bet',
     'filter.special' => 'Special',
     'filter.name' => 'Name',
