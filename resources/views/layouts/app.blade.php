@@ -104,15 +104,7 @@
     var timer = setInterval(timerTick, 1000);
 
     function timerTick() {
-    var toGMT;
-
-    if (appCurrency === 'USD') {
-        toGMT = -4; 
-    } else if (appCurrency === 'KRW') {
-        toGMT = +9; 
-    } else {
-        toGMT = 0; 
-    }
+    var toGMT = 8;
 
     var now = new Date();
     var utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
