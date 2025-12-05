@@ -123,7 +123,7 @@ class PasswordController extends Controller
                         ,'error' => __('error.admin.internal_error')
                         ];
 
-            Log::Debug($e);
+            Log::debug($e);
             return json_encode($response);
         }
     }

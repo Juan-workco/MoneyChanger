@@ -97,7 +97,7 @@ class LogController extends Controller
         }
         catch(\Exception $e)
         {
-            log::debug($e);
+            Log::debug($e);
             return [];
         }
     }
@@ -173,7 +173,7 @@ class LogController extends Controller
         }
         catch(\Exception $e)
         {
-            log::debug($e);
+            Log::debug($e);
             return [];
         }
     }

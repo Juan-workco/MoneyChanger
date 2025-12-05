@@ -862,7 +862,7 @@ class Helper extends Controller
         }
         catch(\Exception $e)
         {
-            log::debug($e);
+            Log::debug($e);
         }
     }
 

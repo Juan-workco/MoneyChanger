@@ -281,7 +281,7 @@ function onMainModalDismissError()
                     </div>
 
                     <div>
-                        <button class="btn btn-sm btn-primary" onclick="showAddModal()">{{ __("common.maindata.add") }}</button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="showAddModal()">{{ __("common.maindata.add") }}</button>
                     </div>
                 </div>
             </form>

@@ -144,7 +144,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            Log::Debug($e);
+            Log::debug($e);
             return [];
         }
     }
@@ -322,7 +322,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            Log::Debug($e);
+            Log::debug($e);
             $errMsg = '';
 
             if($e instanceof \PDOException) 
@@ -491,7 +491,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            Log::Debug($e);
+            Log::debug($e);
 
             return ['status' => 0];
         }
@@ -528,7 +528,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            Log::Debug($e);
+            Log::debug($e);
             return [];
         }
     }
@@ -575,7 +575,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            log::debug($e);
+            Log::debug($e);
             return [];
         }
     }
@@ -594,7 +594,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            log::debug($e);
+            Log::debug($e);
             return [];
         }
        
@@ -638,7 +638,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            Log::Debug($e);
+            Log::debug($e);
             return [];
         }
     }
@@ -708,7 +708,7 @@ class AdminController extends Controller
         }
         catch(\Exception $e)
         {
-            log::debug($e);
+            Log::debug($e);
             return [];
         }
     }

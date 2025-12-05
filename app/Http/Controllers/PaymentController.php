@@ -142,8 +142,6 @@ class PaymentController extends Controller
             $name = ($name == null) ? '%' : "%$name%";
             $value = ($value == null) ? '%' : "%$value%";
 
-            log::debug($method);
-
             $sql = "
                 SELECT a.id, a.name, a.value, b.type AS method
                 FROM payment_account a
