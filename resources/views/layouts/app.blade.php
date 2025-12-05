@@ -359,6 +359,24 @@
                     @can('system.accounts.admin')
                     <li class="nav-item nav-dropdown">
                         <a class="nav-link nav-dropdown-toggle" href="#">
+                            <i class="icon-people"></i> 
+                            {{ __('app.sidebar.customer') }}
+                        </a>
+                        
+                        <ul class="nav-dropdown-items">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/customer/list">
+                                    <i class="icon-list"></i> 
+                                    {{ __('app.sidebar.customer.list') }}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    @endcan
+
+                    @can('system.accounts.admin')
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle" href="#">
                             <i class="fa fa-money"></i> 
                             {{ __('app.sidebar.currency') }}
                         </a>

@@ -58,7 +58,7 @@ function getMainData()
             let obj = JSON.parse(data);
             
 
-            if(obj.status = 1)
+            if(obj.status == 1)
             {
                 mainData = obj.data
             }

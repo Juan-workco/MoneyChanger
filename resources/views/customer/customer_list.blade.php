@@ -28,6 +28,8 @@ function prepareLocale()
     locale['buy_rate'] = "Buy Rate";
     locale['sell_rate'] = "Sell Rate";
     locale['status'] = "Status";
+    locale['total_transaction'] = "Total Transaction";
+    locale['created_at'] = "Created At";
 
     locale['action'] = "{!! __('common.maindata.action') !!}";
     locale['edit'] = "{!! __('common.maindata.edit') !!}";
@@ -50,7 +52,7 @@ function getMainData()
 
     $.ajax({
         type: "GET",
-        url: "/ajax/currency/list",
+        url: "/ajax/customer/list",
         data: data,
         success: function(data)
         {
@@ -76,12 +78,11 @@ function loadMainData(containerId)
     $("#main-table").show();
 
     let fields = [
-        ["code", locale['code'], true, false],
-        ["name", locale['name'], true, false],
-        ["symbol", locale['symbol'], false, false],
-        ["status_desc", locale['status'], true, false],
-        ["buy_rate", locale['buy_rate'], false, true],
-        ["sell_rate", locale['sell_rate'], false, true],
+        ["name", locale['code'], true, false],
+        ["phone", locale['name'], true, false],
+        ["active_desc", locale['status'], false, false],
+        ["total_transactions", locale['total_transaction'], true, true],
+        ["created_at", locale['created_at'], false, true],
         ["", locale['action'], false, false]
     ];
 
@@ -97,12 +98,6 @@ function loadMainData(containerId)
 
         for (let i = 1, row; row = table.rows[i]; i++)
         {
-            let buyRate = mainData.results[i - 1]["buy_rate"];
-            let sellRate = mainData.results[i - 1]["sell_rate"];
-
-            row.cells[fieldBuyRate].innerHTML = utils.formatMoney(buyRate, 4);
-            row.cells[fieldSellRate].innerHTML = utils.formatMoney(sellRate, 4);
-
             let editBtn = document.createElement("button");
             editBtn.className = "btn btn-primary";
             editBtn.rowId = i;
@@ -144,6 +139,54 @@ function resetMainData()
     filterMainData();
 }
 
+function showAddModal()
+{
+    $("#modalAdd").modal("show");
+}
+
+function submitAddModal()
+{
+    utils.startLoadingBtn("btnSubmitAdd","modalAdd");
+
+    $.ajax({
+        url: "/ajax/customer/new",
+        type: "POST",
+        data:  new FormData($("#addForm")[0]),
+        contentType: false,
+        cache: false,
+        processData:false,
+        success: function(data)
+        {
+            utils.stopLoadingBtn("btnSubmitAdd","modalAdd");
+
+            $("#modalAdd").modal("hide");
+
+            var obj = JSON.parse(data);
+
+            if(obj.status == 1)
+            {
+                utils.showModal(locale['info'],locale['success'],obj.status,onAddModalDismiss);
+            }
+            else
+            {
+                utils.showModal(locale['error'],obj.error,obj.status,onAddModalErrorDismiss);
+            }
+        },
+        error: function(){}             
+    }); 
+}
+
+function onAddModalDismiss()
+{
+    $("#addForm")[0].reset();
+    filterMainData();
+}
+
+function onAddModalErrorDismiss()
+{
+    $("#modalAdd").modal("show");
+}
+
 function showEditModal()
 {
     $("#editForm").attr("enabled",1);
@@ -151,19 +194,13 @@ function showEditModal()
     let rowId = this.rowId;
     let data = mainData.results[rowId - 1];
     let id = data['id'];
-    let code = data['code'];
     let name = data['name'];
-    let symbol = data['symbol'];
-    let buyRate = data['buy_rate'];
-    let sellRate = data['sell_rate'];
+    let phone = data['phone'];
     let status = data['status'];
 
     $("#modalEdit #id").val(id);
-    $("#modalEdit #code").val(code);
     $("#modalEdit #name").val(name);
-    $("#modalEdit #symbol").val(symbol);
-    $("#modalEdit #buy_rate").val(utils.formatMoney(buyRate, 4));
-    $("#modalEdit #sell_rate").val(utils.formatMoney(sellRate, 4));
+    $("#modalEdit #phone").val(phone);
     $("#modalEdit #status").val(status);
 
     $("#modalEdit").modal("show");
@@ -175,13 +212,10 @@ function showEditModal()
 
 function submitEditModal() 
 {
-    $("#modalEdit").modal('hide');
-    $("#editForm").attr("enabled",0);
-        
-    utils.startLoadingBtn("btnSubmit","editForm");
+    utils.startLoadingBtn("btnSubmitEdit","modalEdit");
 
     $.ajax({
-        url: "/ajax/currency/edit",
+        url: "/ajax/customer/edit",
         type: "POST",
         data:  new FormData($("#editForm")[0]),
         contentType: false,
@@ -189,32 +223,34 @@ function submitEditModal()
         processData:false,
         success: function(data)
         {
-            utils.stopLoadingBtn("btnSubmit","editForm");
+            utils.stopLoadingBtn("btnSubmitEdit","modalEdit");
+
+            $("#modalEdit").modal("hide");
 
             var obj = JSON.parse(data);
 
             if(obj.status == 1)
             {
-                utils.showModal(locale['info'],locale['success'],obj.status,onMainModalDismiss);
+                utils.showModal(locale['info'],locale['success'],obj.status,onEditModalDismiss);
             }
             else
             {
-                utils.showModal(locale['error'],obj.error,obj.status,onMainModalDismissError);
+                utils.showModal(locale['error'],obj.error,obj.status,onEditModalDismissError);
             }
         },
         error: function(){}             
     }); 
 }
 
-function onMainModalDismiss()
+function onEditModalDismiss()
 {
+    $("#editForm")[0].reset();
     filterMainData();
 }
 
-function onMainModalDismissError()
+function onEditModalDismissError()
 {
-    $("#modalEdit").modal('show');
-    $("#editForm").attr("enabled",1);
+    $("#modalEdit").modal("show");
 }
 
 </script>
@@ -250,8 +286,8 @@ function onMainModalDismissError()
 
 <!-- Breadcrumb -->
 <ol class="breadcrumb">
-    <li class="breadcrumb-item">{{ __('app.currency.breadcrumb.currency') }}</li>
-    <li class="breadcrumb-item">{{ __('app.currency.breadcrumb.currency.list') }}</li>
+    <li class="breadcrumb-item">{{ __('app.currency.breadcrumb.customer') }}</li>
+    <li class="breadcrumb-item">{{ __('app.currency.breadcrumb.customer.list') }}</li>
 </ol>
 
 <div class="container-fluid">
@@ -264,32 +300,36 @@ function onMainModalDismissError()
                 <div class="card-header">
                     <strong>{{ __('common.filter.title') }}</strong>
                 </div>
-
+                
                 <div class="card-body">
-
+                    
                     <div class="row">
-
                         <div class="col-sm-2">
                             <div class="form-group">
-                                <label for="code">{{ __('common.filter.currency.code') }}</label>
-                                <input type="text" class="form-control" name="code" id="code" placeholder="MYR" autocomplete="off">
+                                <label for="name">{{ __('app.customer.filter.name') }}</label>
+                                <input type="text" class="form-control" id="name" autocomplete="off" placeholder="">
                             </div>
                         </div>
 
                         <div class="col-sm-2">
                             <div class="form-group">
-                                <label for="name">{{ __('common.filter.name') }}</label>
-                                <input type="text" class="form-control" name="name" id="name" placeholder="Malaysia Ringgit" autocomplete="off">
+                                <label for="phone">{{ __('app.customer.filter.phone') }}</label>
+                                <input type="text" class="form-control" id="phone" autocomplete="off" placeholder="">
                             </div>
                         </div>
                     </div>
-
                 </div>
 
-                <div class="card-footer">
-                    <button type="button" id="submit" class="btn btn-sm btn-success" onclick="filterMainData()"><i class="fa fa-dot-circle-o"></i> {{ __('common.filter.submit') }}</button>
+                <div class="card-footer d-flex justify-content-between" style="gap: 2px">
+                    <div>
+                        <button type="button" class="btn btn-sm btn-success" onclick="filterMainData()"><i class="fa fa-dot-circle-o"></i> {{ __('common.filter.submit') }}</button>
 
-                    <button type="button" class="btn btn-sm btn-danger" onclick="resetMainData()"><i class="fa fa-ban"></i> {{ __('common.filter.reset') }}</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="resetMainData()"><i class="fa fa-ban"></i> {{ __('common.filter.reset') }}</button>
+                    </div>
+                    
+                    <div>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="showAddModal()">{{ __("common.maindata.add") }}</button>
+                    </div>
                 </div>
 
             </form>
@@ -308,13 +348,47 @@ function onMainModalDismissError()
     </div>
 </div>
 
-<div id="modalEdit" class="modal fade" role="dialog">
+<div id="modalAdd" class="modal fade" role="dialog">
     <div class="modal-dialog modal-primary modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">{{ __('app.currency.modal.title.edit') }}</h4>
+                <h4 class="modal-title">{{ __('app.currency.modal.title.add') }}</h4>
                 <button class="close" id="close" data-dismiss="modal">×</button>
             </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    @csrf
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-bold">Name</label>
+                        <input type="text" id="name" name="name" class="form-control" placeholder="Customer Name" value="" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone" class="form-label fw-bold">Phone</label>
+                        <input type="text" id="phone" name="phone" class="form-control" placeholder="Customer Phone" value="">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex justify-content-end">
+                    <button type="submit" id="btnSubmitAdd" class="btn btn-primary px-4" onclick="submitAddModal()">
+                        <i class="bi bi-plus-circle"></i> {{ __("common.maindata.submit") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalEdit" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-primary modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">{{ __('app.customer.modal.title.edit') }}</h4>
+                <button class="close" id="close" data-dismiss="modal">×</button>
+            </div>
+
             <div class="modal-body">
                 <form id="editForm">
                     @csrf
@@ -322,51 +396,31 @@ function onMainModalDismissError()
                     <input type="hidden" id="id" name="id">
 
                     <div class="mb-3">
-                        <label for="code" class="form-label fw-bold">Currency Code</label>
-                        <input type="text" id="code" name="code" class="form-control" placeholder="e.g. MYR" value="">
-                        <small class="text-muted">Use 3-letter ISO code (MYR, USD, SGD, etc.)</small>
+                        <label for="Name" class="form-label fw-bold">Name</label>
+                        <input type="text" id="name" name="name" class="form-control" value="" required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="name" class="form-label fw-bold">Currency Name</label>
-                        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Malaysia Ringgit" value="" required>
+                        <label for="phone" class="form-label fw-bold">Phone</label>
+                        <input type="text" id="phone" name="phone" class="form-control" value="">
                     </div>
 
                     <div class="mb-3">
-                        <label for="symbol" class="form-label fw-bold">Symbol</label>
-                        <input type="text" id="symbol" name="symbol" class="form-control" placeholder="e.g. RM" value="" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="buy_rate" class="form-label fw-bold">Buy Rate</label>
-                        <input type="number" step="0.0001" id="buy_rate" name="buy_rate" class="form-control" placeholder="e.g. 4.7800" value="" min="0" required>
-                        <small class="text-muted">
-                            Rate is based on: <strong>1 System Currency : X Foreign Currency</strong>
-                        </small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="sell_rate" class="form-label fw-bold">Sell Rate</label>
-                        <input type="number" step="0.0001" id="sell_rate" name="sell_rate" class="form-control" placeholder="e.g. 4.7800" value="" min="0" required>
-                        <small class="text-muted">
-                            Rate is based on: <strong>1 System Currency : X Foreign Currency</strong>
-                        </small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="status" class="form-label fw-bold">Status</label>
-                        <select id="status" name="status" class="form-select form-control">
+                        <label for="status" class="form-label fw-bold" class="form-control">Status</label>
+                        <select name="status" id="status" class="form-control" required>
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>
                         </select>
                     </div>
-
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" id="btnSubmit" class="btn btn-primary px-4">
-                            <i class="bi bi-plus-circle"></i> {{ __("common.maindata.edit") }}
-                        </button>
-                    </div>
                 </form>
+            </div>
+
+            <div class="modal-footer">
+                <div class="d-flex justify-content-end">
+                    <button type="submit" id="btnSubmitEdit" class="btn btn-primary px-4" onclick="submitEditModal()">
+                        <i class="bi bi-plus-circle"></i> {{ __("common.maindata.edit") }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>

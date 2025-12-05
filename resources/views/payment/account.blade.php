@@ -60,7 +60,7 @@ function getMainData()
         {
             let obj = JSON.parse(data);
             
-            if(obj.status = 1)
+            if(obj.status == 1)
             {
                 mainData = obj.data
             }
@@ -284,8 +284,6 @@ function onMainModalDismissError()
                         <button class="btn btn-sm btn-primary" onclick="showAddModal()">{{ __("common.maindata.add") }}</button>
                     </div>
                 </div>
-
-                    <input type="hidden" id="h_name">
             </form>
         </div>
 

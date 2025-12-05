@@ -67,6 +67,17 @@ Route::get('/dashboard', 'ViewControllers\DashboardViewController@index');
 
 /*
 |--------------------------------------------------------------------------
+| Customer Routes
+|--------------------------------------------------------------------------
+ */
+
+Route::get('/customer/list', 'ViewControllers\CustomerViewController@index');
+Route::get('/ajax/customer/list', 'ViewControllers\CustomerViewController@getList');
+Route::post('/ajax/customer/new', 'ViewControllers\CustomerViewController@createCustomer');
+Route::post('/ajax/customer/edit', 'ViewControllers\CustomerViewController@editCustomer');
+
+/*
+|--------------------------------------------------------------------------
 | Currency Routes
 |--------------------------------------------------------------------------
  */
@@ -98,7 +109,7 @@ Route::post('/ajax/admins/roles/update', 'ViewControllers\AdminViewController@ed
 
 /*
 |--------------------------------------------------------------------------
-| Currency Routes
+| Payment Routes
 |--------------------------------------------------------------------------
  */
 

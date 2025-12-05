@@ -58,6 +58,10 @@ return [
     'sidebar.admin.list' => 'Admin List',
     'sidebar.admin.admin_roles' => 'Admin Roles',
 
+    'sidebar.customer' => 'Customer',
+    'sidebar.customer.new' => 'Create Customer',
+    'sidebar.customer.list' => 'Customer List',
+
     'sidebar.currency' => 'Currency',
     'sidebar.currency.new' => 'Create Currency',
     'sidebar.currency.list' => 'Currency List',
@@ -108,6 +112,22 @@ return [
     'home.totalturnover' => 'TOTAL TURNOVER',
     'home.totalwinloss' => 'TOTAL WINLOSS',
     'home.totalmemberbet' => 'TOTAL MEMBER BET',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Customer
+    |--------------------------------------------------------------------------
+    */
+
+    'customer.breadcrumb.customer' => 'Customer',
+    'customer.breadcrumb.customer.create' => 'Create Customer',
+    'customer.breadcrumb.customer.list' => 'Customer List',
+    
+    'customer.filter.name' => 'Name',
+    'customer.filter.phone' => 'Phone',
+
+    'customer.modal.title.add' => 'Add Customer',
+    'customer.modal.title.edit' => 'Edit Customer',
 
     /*
     |--------------------------------------------------------------------------

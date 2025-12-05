@@ -14,6 +14,7 @@ return [
     'maindata.edit' => 'Edit',
     'maindata.add' => 'Add',
     'maindata.confirm' => 'Confirm',
+    'maindata.submit' => 'Submit',
 
     //filter box
     'filter.title' => 'Filter',
