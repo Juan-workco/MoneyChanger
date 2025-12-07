@@ -43,9 +43,7 @@
             success: function(data)
             {
                 utils.stopLoadingBtn("btnSubmit","mainForm");
-
-                console.log(data);
-
+                
                 var obj = JSON.parse(data);
 
                 if(obj.status == 1)

@@ -66,23 +66,21 @@
             data:  data,
             success: function(data)
             {
-            // console.log(data);
+                utils.stopLoadingBtn("btnSubmit","mainForm");
 
-            utils.stopLoadingBtn("btnSubmit","mainForm");
+                var obj = JSON.parse(data);
 
-            var obj = JSON.parse(data);
-
-            if(obj.status == 1)
-            {
-                utils.showModal(locale['info'],locale['success'],obj.status,onMainModalDismiss);
-            }
-            else
-            {
-                utils.showModal(locale['error'],obj.error,obj.status,onMainModalDismissError);
-            }
-        },
-        error: function(){}             
-    }); 
+                if(obj.status == 1)
+                {
+                    utils.showModal(locale['info'],locale['success'],obj.status,onMainModalDismiss);
+                }
+                else
+                {
+                    utils.showModal(locale['error'],obj.error,obj.status,onMainModalDismissError);
+                }
+            },
+            error: function(){}             
+        }); 
     }
 
     function onMainModalDismiss()

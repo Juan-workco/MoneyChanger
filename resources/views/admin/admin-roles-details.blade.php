@@ -49,7 +49,7 @@ function getMainData()
 
     data["name"] = $("#name").val();
 
-    // console.log(data);
+    // 
 
     $.ajax({
         type: "GET",
@@ -194,8 +194,6 @@ function deleteGame()
         data:  {"id": id, "log_old": log_data},
         success: function(data)
         {
-            // console.log(data);
-
             var obj = JSON.parse(data);
 
             if(obj.status == 1)

@@ -129,8 +129,6 @@
             data:  data,
             success: function(data)
             {
-                // console.log(data);
-
                 utils.stopLoadingBtn("btnSubmit","mainForm");
 
                 var obj = JSON.parse(data);
