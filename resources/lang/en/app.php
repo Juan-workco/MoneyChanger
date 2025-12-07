@@ -73,6 +73,8 @@ return [
 
     'sidebar.settings.admin.roles.create' => 'Create Admin Roles',
     'sidebar.settings.admin.roles.list' => 'Admins Roles',
+    
+    'sidebar.settings.system' => 'System',
 
     'sidebar.payment' => 'Payment',
     'sidebar.payment.method' => 'Payment Method',
@@ -212,4 +214,13 @@ return [
     'admins.admins_role.edit.details' => 'Edit Role Permission',
     'admins.admins_role.edit.username' => 'Role Name',
     'admins.admins_role.edit.update' => 'Update',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Setitng
+    |--------------------------------------------------------------------------
+    */
+
+    'setting.breadcrumb.setting' => 'Settings',
+    'setting.breadcrumb.setting.system' => 'System',
 ];

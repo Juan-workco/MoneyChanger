@@ -122,3 +122,12 @@ Route::get('/payment/account', 'ViewControllers\PaymentViewController@paymentAcc
 Route::get('/ajax/payment/account/list', 'ViewControllers\PaymentViewController@getPaymentAccountList');
 Route::post('/ajax/payment/account/new', 'ViewControllers\PaymentViewController@createPaymentAccount');
 
+
+/*
+|--------------------------------------------------------------------------
+| Payment Routes
+|--------------------------------------------------------------------------
+ */
+
+Route::get('/setting/system', 'ViewControllers\SettingViewController@index');
+Route::post('/ajax/setting/system/update', 'ViewControllers\SettingViewController@updateSetting');

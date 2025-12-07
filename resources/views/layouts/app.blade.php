@@ -308,7 +308,7 @@
                 </div>
             </li>
 
-            <li class="nav-item dropdown">
+            {{-- <li class="nav-item dropdown">
                 <a class="nav-link nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
                     <i class="flag-icon flag-icon-{{ Helper::getLocaleFlag() }} h1" title="{{ __('app.header.language') }}" id="gb" style="width:35px"></i> 
                 </a>
@@ -333,7 +333,7 @@
 
                 </div>
 
-            </li>   
+            </li>    --}}
 
         </ul>
     </header>
@@ -428,14 +428,6 @@
                         </a>
                         
                         <ul class="nav-dropdown-items">
-                            @can('permissions.create_admin_roles')
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admins/roles/new"><i class="icon-user-follow"></i>  
-                                    {{ __('app.sidebar.settings.admin.roles.create') }}
-                                </a>
-                            </li>
-                            @endcan
-
                             @can('permissions.admin_roles')
                             <li class="nav-item">
                                 <a class="nav-link" href="/admins/roles"><i class="icon-list"></i> 
@@ -443,6 +435,12 @@
                                 </a>
                             </li>
                             @endcan
+                            
+                            <li class="nav-item">
+                                <a class="nav-link" href="/setting/system"><i class="icon-list"></i> 
+                                    {{ __('app.sidebar.settings.system') }}
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     @endcan
