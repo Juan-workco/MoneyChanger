@@ -74,7 +74,7 @@ return [
     'sidebar.settings.admin.roles.create' => 'Create Admin Roles',
     'sidebar.settings.admin.roles.list' => 'Admins Roles',
     
-    'sidebar.settings.system' => 'System',
+    'sidebar.settings.system' => 'System Settings',
 
     'sidebar.payment' => 'Payment',
     'sidebar.payment.method' => 'Payment Method',

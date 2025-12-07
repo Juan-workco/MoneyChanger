@@ -351,7 +351,7 @@
                     @can('system.accounts.admin')
                     <li class="nav-item nav-dropdown">
                         <a class="nav-link nav-dropdown-toggle" href="#">
-                            <i class="icon-people"></i> 
+                            <i class="fa fa-users"></i> 
                             {{ __('app.sidebar.customer') }}
                         </a>
                         
@@ -423,8 +423,9 @@
                     @can('system.accounts.admin')
                     @canany(['permissions.create_admin','permissions.view_admin_list','permissions.create_admin_roles','permissions.admin_roles']) 
                     <li class="nav-item nav-dropdown">
-                        <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-settings"></i> 
-                            {{ __('app.sidebar.settings') }}
+                        <a class="nav-link nav-dropdown-toggle" href="#">
+                            <i class="fa fa-user-o"></i> 
+                            {{ __('app.sidebar.admins') }}
                         </a>
                         
                         <ul class="nav-dropdown-items">
@@ -435,15 +436,18 @@
                                 </a>
                             </li>
                             @endcan
-                            
-                            <li class="nav-item">
-                                <a class="nav-link" href="/setting/system"><i class="icon-list"></i> 
-                                    {{ __('app.sidebar.settings.system') }}
-                                </a>
-                            </li>
                         </ul>
                     </li>
                     @endcan
+                    @endcan
+
+                    @can('system.accounts.admin')
+                        <li class="nav-item">
+                            <a class="nav-link" href="/setting/system">
+                                <i class="icon-settings"></i>
+                                {{ __('app.sidebar.settings.system') }}
+                            </a>
+                        </li>
                     @endcan
                 </ul>
             </nav>
