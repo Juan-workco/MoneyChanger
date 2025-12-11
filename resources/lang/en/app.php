@@ -52,6 +52,7 @@ return [
     'sidebar.home' => 'Home',
     'sidebar.dashboard' => 'Dashboard',
     'sidebar.reports' => 'Reports',
+    'sidebar.remittance' => 'Remittance',
 
     'sidebar.admins' => 'Admins',
     'sidebar.admin.create' => 'Create Admin',
@@ -114,6 +115,15 @@ return [
     'home.totalturnover' => 'TOTAL TURNOVER',
     'home.totalwinloss' => 'TOTAL WINLOSS',
     'home.totalmemberbet' => 'TOTAL MEMBER BET',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Home
+    |--------------------------------------------------------------------------
+    */
+
+    'remittance.breadcrumb.remittance' => 'Remittance',
+    'remittance.breadcrumb.remittance.create' => 'Add New Remittance',
 
     /*
     |--------------------------------------------------------------------------

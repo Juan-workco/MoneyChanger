@@ -348,6 +348,15 @@
                     </li>
                     @endcan
 
+                    @can('system.accounts.all')
+                    <li class="nav-item">
+                        <a class="nav-link" href="/remittance">
+                            <i class="icon-notebook">
+                            </i> {{ __('app.sidebar.remittance') }}
+                        </a>
+                    </li>
+                    @endcan
+
                     @can('system.accounts.admin')
                     <li class="nav-item nav-dropdown">
                         <a class="nav-link nav-dropdown-toggle" href="#">

@@ -67,6 +67,18 @@ Route::get('/dashboard', 'ViewControllers\DashboardViewController@index');
 
 /*
 |--------------------------------------------------------------------------
+| Remittance Routes
+|--------------------------------------------------------------------------
+ */
+
+Route::get('/remittance', 'ViewControllers\RemittanceViewController@index');
+Route::get('/ajax/remittance/list', 'ViewControllers\RemittanceViewController@getList');
+
+Route::get('/remittance/new', 'ViewControllers\RemittanceViewController@create');
+Route::post('/ajax/remittance/new', 'ViewControllers\RemittanceViewController@createRemittance');
+
+/*
+|--------------------------------------------------------------------------
 | Customer Routes
 |--------------------------------------------------------------------------
  */

@@ -23,6 +23,7 @@
 		'createSpinner' : createSpinner, //spinner indicator
 
 		'formatMoney' : formatMoney,
+		'formatFloat' : formatFloat,
 		'formatCurrencyInput' : formatCurrencyInput,
 		'formatCurrencyInputWithoutDecimal' : formatCurrencyInputWithoutDecimal,
 		'formatted_num' : formatted_num,
@@ -716,12 +717,12 @@
 
 	}
 
-	function formatMoney(amount, decimalCount = 0, decimal = ".", thousands = ",") 
+	function formatMoney(amount, decimalCount = 2, decimal = ".", thousands = ",") 
 	{
 	  try 
 	  {
-	  	if(['USD'].includes(appCurrency) === true)
-	  		decimalCount = 2;
+	  	// if(['USD'].includes(appCurrency) === true)
+	  	// 	decimalCount = 2;
 
 	    decimalCount = Math.abs(decimalCount);
 	    decimalCount = isNaN(decimalCount) ? 2 : decimalCount;
@@ -852,6 +853,13 @@
 	        });
 	    });
 
+	}
+
+	function formatFloat(amount)
+	{   
+		amount = parseFloat(amount.replace(/[^0-9.]/g, ''));
+
+		return amount;
 	}
 
 	function generateModalMessage(container,type,contentBody)

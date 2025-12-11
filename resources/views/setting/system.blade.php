@@ -3,6 +3,7 @@
 @section('head')
 
 <script type="text/javascript">
+    const settings = @json($settings);
 
     $(document).ready(function() 
     {
@@ -14,6 +15,12 @@
             e.preventDefault();
             submitMainForm();
         }));
+
+        settings.forEach(setting => {
+            const {setting_key, setting_value} = setting;
+            
+            $(`#${setting_key}`).val(setting_value);
+        })
 
     });
 
