@@ -14,7 +14,6 @@ return [
     */
 
     'failed' => 'These credentials do not match our records.',
-    'inactive' => 'Your account is inactive. Please contact your upline.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
 
 ];

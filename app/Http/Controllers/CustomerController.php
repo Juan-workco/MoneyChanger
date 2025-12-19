@@ -2,175 +2,163 @@
 
 namespace App\Http\Controllers;
 
+use App\Customer;
+use App\Transaction;
+use App\User;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Http\Controllers\Helper;
+use Illuminate\Support\Facades\Auth;
 use Log;
-use Auth;
-use DB;
 
 class CustomerController extends Controller
 {
     /**
-     * Create a new controller instance.
-     *
-     * @return void
+     * Display a listing of customers
      */
-    public function __construct()
+    public function index(Request $request)
     {
-        $this->middleware('auth');
+        $query = Customer::with('agent');
+
+        // Search by name, email, phone, or ID number
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by status
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        $customers = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        return view('customers.index', compact('customers'));
     }
 
     /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Http\Response
+     * Show the form for creating a new customer
      */
-    
-    public static function getList(Request $request)
+    public function create()
     {
-        try
-        {
-            $page = $request->input('page');
-            $orderBy = $request->input('order_by');
-            $orderType = $request->input('order_type');
-
-            $name = $request->input('name');
-            $phone = $request->input('phone');
-
-            $name = ($name === null) ? "%" : "%$name%";
-            $phone = ($phone === null) ? "%" : "%$phone%";
-
-            $sql = "
-                SELECT id, name, phone, is_active AS status, total_transactions, created_at
-                FROM customers
-                WHERE name LIKE :name
-                    OR phone LIKE :phone
-            ";
-
-            $params = [
-                'name' => $name,
-                'phone' => $phone
-            ];
-            
-            $orderByAllow = ['name, phone, created_at'];
-            $orderByDefault = 'created_at asc';
-
-            $sql = Helper::appendOrderBy($sql, $orderBy, $orderType, $orderByAllow, $orderByDefault);
-            $data = Helper::paginateData($sql, $params, $page);
-
-            $aryStatus = self::getStatusOptions();
-
-            foreach ($data['results'] as $d)
-            {
-                $d->active_desc = Helper::getOptionsValue($aryStatus, $d->status);
-            }
-
-            return json_encode(['status' => 1, 'data' => $data]);
-        }
-        catch (\Exception $e)
-        {
-            Log::error($e);
-            return json_encode(['status' => 0, 'error', __('error.internal_error')]);
-        }
+        // No need to pass agents - will use logged-in user
+        return view('customers.create');
     }
-    
-    public static function createCustomer(Request $request)
+
+    /**
+     * Store a newly created customer
+     */
+    public function store(Request $request)
     {
-        try
-        {
-            $adminId = Auth::id();
-            $name = $request->input('name');
-            $phone = $request->input('phone');
+        $validated = $request->validate([
+            'name' => 'required|string|max:200',
+            'email' => 'nullable|email|max:100',
+            'phone' => 'required|string|max:50',
+            'address' => 'nullable|string',
+            'country' => 'nullable|string|max:100',
+            'is_active' => 'boolean',
+        ]);
 
-            $name = trim($name);
-            $phone = trim($phone);
+        $validated['is_active'] = $request->has('is_active') ? true : false;
+        $validated['agent_id'] = Auth::id(); // Auto-assign logged-in user as agent
 
-            $db = DB::SELECT("SELECT 1 FROM customers WHERE name = ? AND phone = ? AND agent_id = ?", [$name, $phone, $adminId]);
+        Customer::create($validated);
 
-            if (!empty($db))
-            {
-                return json_encode(['status' => 1, 'error' => "Customer already exists"]);
-            }
-
-            DB::INSERT("
-                INSERT INTO customers (`name`, `phone`, `is_active`, `agent_id`, `created_at`)
-                VALUES (?, ?, 1, ?, NOW())
-            ", [$name, $phone, $adminId]);
-
-            return json_encode(['status' => 1]);
-        }
-        catch (\Exception $e)
-        {
-            Log::error($e);
-            return json_encode(['status' => 1, 'error' => __('error.internal_error')]);
-        }
+        return redirect()->route('customers.index')
+            ->with('success', 'Customer created successfully');
     }
-    
-    public static function editCustomer(Request $request)
+
+    /**
+     * Display the specified customer
+     */
+    public function show($id)
     {
-        try
-        {
-            $adminId = Auth::id();
-            $id = $request->input('id');
-            $name = $request->input('name');
-            $phone = $request->input('phone');
-            $status = $request->input('status');
-
-            $name = trim($name);
-            $phone = trim($phone);
-
-            if (!in_array($status, [0,1]))
-            {
-                return json_encode(['status' => 0, 'error' => "Invalid Status"]);
+        $customer = Customer::with([
+            'transactions' => function ($q) {
+                $q->orderBy('transaction_date', 'desc')->limit(50);
             }
+        ])->findOrFail($id);
 
-            $db = DB::SELECT("
-                SELECT 1
-                FROM customers
-                WHERE id = ? AND agent_id = ?
-            ", [$id, $adminId]);
-
-            if (empty($db))
-            {
-                return json_encode(['status' => 0, 'error' => "Customer not exists"]);
-            }
-
-            $db = DB::SELECT("
-                SELECT 1
-                FROM customers
-                WHERE agent_id = ? 
-                    AND id != ?
-                    AND (name = ? OR phone = ? )
-            ", [$adminId, $id, $name, $phone]);
-
-            if (!empty($db))
-            {
-                return json_encode(['status' => 0, 'error' => "Name or phone already registed. Please check again your customer"]);
-            }
-
-            DB::UPDATE("
-                UPDATE customers
-                SET name = ?, 
-                    phone = ?,
-                    is_active = ?
-                WHERE id = ?
-            ", [$name, $phone, $status,  $id]);
-
-            return json_encode(['status' => 1]);
-        }
-        catch (\Exception $e)
-        {
-            Log::error($e);
-            return json_encode(['status' => 0, 'error' => __('error.internal_error')]);
-        }
-    }
-    
-    public static function getStatusOptions()
-    {
-        return [
-            [0, 'Inactive'],
-            [1, 'Active']
+        $stats = [
+            'total_transactions' => $customer->transactions()->count(),
+            'sent_transactions' => $customer->transactions()->where('status', 'sent')->count(),
+            'pending_transactions' => $customer->transactions()->where('status', 'pending')->count(),
+            'total_volume' => $customer->transactions()->where('status', 'sent')->sum('amount_from'),
         ];
+
+        return view('customers.show', compact('customer', 'stats'));
+    }
+
+    /**
+     * Show the form for editing the specified customer
+     */
+    public function edit($id)
+    {
+        $customer = Customer::findOrFail($id);
+        // No need to pass agents - will use logged-in user
+        return view('customers.edit', compact('customer'));
+    }
+
+    /**
+     * Update the specified customer
+     */
+    public function update(Request $request, $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:200',
+            'email' => 'nullable|email|max:100',
+            'phone' => 'required|string|max:50',
+            'id_type' => 'required|in:ic,passport,other',
+            'id_number' => 'required|string|max:100',
+            'address' => 'nullable|string',
+            'country' => 'nullable|string|max:100',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->has('is_active') ? true : false;
+
+        $customer->update($validated);
+
+        return redirect()->route('customers.index')
+            ->with('success', 'Customer updated successfully');
+    }
+
+    /**
+     * Remove the specified customer
+     */
+    public function destroy($id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        // Check if customer has transactions
+        if ($customer->transactions()->count() > 0) {
+            return redirect()->route('customers.index')
+                ->with('error', 'Cannot delete customer with existing transactions');
+        }
+
+        $customer->delete();
+
+        return redirect()->route('customers.index')
+            ->with('success', 'Customer deleted successfully');
+    }
+
+    /**
+     * Get customer transaction history
+     */
+    public function transactionHistory($id)
+    {
+        $customer = Customer::findOrFail($id);
+        $transactions = $customer->transactions()
+            ->with(['currencyFrom', 'currencyTo'])
+            ->orderBy('transaction_date', 'desc')
+            ->paginate(20);
+
+            log::debug($transactions);
+
+        return view('customers.transactions', compact('customer', 'transactions'));
     }
 }

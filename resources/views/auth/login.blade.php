@@ -1,236 +1,177 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="en">
+
 <head>
-
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- CSRF Token -->
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <title>{{ config('app.name', 'Laravel') }}</title>
-
-    <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}"></script>
-    <script src="/js/utils.js"></script>
-    
-    <!-- CoreUI -->
-    <link href="/coreui/vendors/css/font-awesome.min.css" rel="stylesheet">
-    <link href="/coreui/vendors/css/simple-line-icons.min.css" rel="stylesheet">
-    <link href="/coreui/css/style.css" rel="stylesheet">
-    <link href="/coreui/css/login_v1_1.css" rel="stylesheet">
-
-    <script type="text/javascript">
-        
-        $(document).ready(function() 
-        {
-            if(utils.getParameterByName("k") == 1)
-            {
-                alert("{!! __('error.login.multiple_login') !!}");
-                window.history.pushState({}, document.title, "/");
-            }
-            else if(utils.getParameterByName("k") == 2)
-            {
-                alert("{!! __('error.login.account_inactive') !!}");
-                window.history.pushState({}, document.title, "/");
-            }
-
-            var locale = "{{ App::getLocale() }}";
-
-            $('#language_text').html($("#locale_" + locale ).html());
-
-            // $('.dropdown-menu').css('width', document.getElementById("language").offsetWidth);
-
-        });
-
-    </script>
-
-    <style>  
-
-        body
-        {
-            background: rgba(0,0,0,1);
-            background-repeat: no-repeat;
-            background-size: cover;
-            -webkit-background-size: cover;
-            -moz-background-size: cover;
-            -o-background-size: cover;
-            overflow: hidden;
-        }
-
-        #username,#password,#language
-        {
-            text-align: center;
-            column-width: inherit;
-            color: #fff;
-            background: transparent;
-            border: solid;
-            border-color: #d4b437;
-            border-width: 2px;
-            border-radius: 20px;
-        }
-
-        #username
-        {
-            color: #fef2b5;
-            background-size:10px;
-            background-repeat: no-repeat;
-            background-position: 5% 50%;
-        }
-
-        #password
-        {
-            color: #fef2b5;
-            background-size:10px;
-            background-repeat: no-repeat;
-            background-position: 5% 50%;
-        }
-
-        #language
-        {
-            position: relative;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Money Changer Admin</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
+            align-items: center;
             justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .dropdown-item
-        {
-            background: #191919;
-            color: #8e8a79;
-            font-size: 12px;
-            padding: 10px 14px;
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-card {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .login-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .login-icon i {
+            font-size: 40px;
+            color: #fff;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-control {
             border-radius: 8px;
-            border: none !important;
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            font-size: 14px;
         }
 
-        .dropdown-menu
-        {
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
             border-radius: 8px;
-            width: 100%; 
-            transform: translate3d(15px, 45px, 0px) !important;
-            background: none;
-            border: 1px solid #dcc45a !important;
-            background: #191919;
-            max-height: 150px;
-            overflow: auto;
+            color: #fff;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.2s;
         }
 
-        .dropdown-item:hover
-        {
-            background: #c5991c !important;
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .button-login:focus
-        {
-            box-shadow: 0 0 0 0.2rem #d4b437 !important;
+        .alert {
+            border-radius: 8px;
+            font-size: 14px;
         }
 
-        ::-webkit-scrollbar 
-        {
-            width: 15px;
+        .custom-checkbox label {
+            font-weight: normal;
+            font-size: 14px;
         }
-
-        /* Track */
-        ::-webkit-scrollbar-track 
-        {
-            background: #191919;
-            border-radius: 10px;
-        }
-         
-        /* Handle */
-        ::-webkit-scrollbar-thumb 
-        {
-            background: #dcc45a; 
-            border: 5px solid #191919;
-            border-radius: 10px;
-        }
-
-        /* Handle on hover */
-        ::-webkit-scrollbar-thumb:hover 
-        {
-            background: #555; 
-        }
-
     </style>
+</head>
 
-</head> 
-
-
-<body class="app flex-row align-items-center">
-    <div class="container" style="height: 100% !important;">
-
-        <div class="row d-flex justify-content-center">
-            <div class="col-12 col-md-6 text-center" style="align-self:center;">
-                <h5 style="color: white; font-size: 13px; padding: 1rem 0;">{{ __('app.login.login') }}</h5>
-
-                <form method="POST" action="{{ route('login') }}" aria-label="{{ __('Login') }}">
-                @csrf
-                    <div class="form-group row justify-content-center">
-
-                        <!-- <label for="username" class="col-sm-3 col-form-label"></label>  -->
-
-                        <div class="col-12 col-md-8">
-                            <input id="username" type="text" class="form-control{{ $errors->has('username') ? ' is-invalid' : '' }}" name="username" value="{{ old('username') }}" autocomplete="off" placeholder="{{ __('app.login.username') }}" required autofocus oninvalid="this.setCustomValidity('{!! __('error.input.required') !!}')" oninput="setCustomValidity('')">
-
-                            @if ($errors->has('username'))
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $errors->first('username') }}</strong>
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="form-group row justify-content-center">
-                        <!-- <label for="password" class="d-none d-md-block col-sm-3 col-form-label"></label>  -->
-
-                        <div class="col-12 col-md-8">
-                            <input id="password" type="password" class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}" name="password" placeholder="{{ __('app.login.password') }}" required oninvalid="this.setCustomValidity('{!! __('error.input.required') !!}')" oninput="setCustomValidity('')">
-
-                            @if ($errors->has('password'))
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $errors->first('password') }}</strong>
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-                    {{-- <div class="form-group row justify-content-center">
-                        <!-- <label for="language" class="d-none d-md-block col-sm-3 col-form-label"></label>  -->
-
-                        <div class="col-12 col-md-8">
-                            <a class="nav-link nav-link form-control" id="language" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-                                <span id="language_text" style="color:#8e8a79;">{{ __('app.login.admin.language') }}</span>
-                                <i class="fa fa-angle-down" style="align-self: center; position: absolute; right: 10px; color: #8e8a79;"></i>
-                            </a>
-
-                            <div class="dropdown-menu dropdown-menu-right">
-                                <a class="dropdown-item" href="#"
-                                    onclick="event.preventDefault();
-                                                document.getElementById('locale').value = 'en';
-                                                document.getElementById('form-locale').submit();">
-                                                <span class="language_selection_text" id="locale_en">{{ __('app.login.admin.english') }}</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div> --}}
-                    <div class="form-group row justify-content-center">
-
-                        <!-- <label for="loginbutton" class="col-sm-3 col-form-label"></label>  -->
-                        <div class="col-12 col-md-8">
-                            <button type="submit" class="button-background button-login px-4" style=outline:none;>{{ __('app.login.login') }}</button>
-                        </div>
-                    </div>
-
-                </form>
-
-
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h1>Money Changer</h1>
+                <p>Admin Portal</p>
             </div>
 
-            <form id="form-locale" action="{{ route('locale') }}" method="POST" style="display: none;">
-                @csrf
-                <input type="hidden" id="locale" name="locale" value="">
-            </form>
+            @if($errors->any())
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ $errors->first() }}
+                </div>
+            @endif
 
+            @if(session('success'))
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('login') }}">
+                @csrf
+
+                <div class="form-group">
+                    <label for="email">
+                        <i class="fas fa-user"></i> Username
+                    </label>
+                    <input type="text" class="form-control {{ $errors->has('username') ? 'is-invalid' : '' }}" id="username"
+                        name="username" value="{{ old('username') }}" required autofocus placeholder="Enter your username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <input type="password" class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
+                        id="password" name="password" required placeholder="Enter your password">
+                </div>
+
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="remember" name="remember">
+                        <label class="custom-control-label" for="remember">
+                            Remember me
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
         </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
+
 </html>

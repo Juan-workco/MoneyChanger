@@ -4,6 +4,7 @@ namespace App;
 
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Log;
 
 class User extends Authenticatable
 {
@@ -15,10 +16,40 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'username', 'password',
+        'username',
+        'name',
+        'email',
+        'password',
+        'role', // Keeping old enum for backward compatibility or migration
+        'role_id',
+        'status',
+        'super_admin'
     ];
 
-    protected $table = 'admin';
+    /**
+     * Get the user's assigned role
+     */
+    public function assignedRole()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    /**
+     * Check if user has a specific permission
+     */
+    public function hasPermission($permission)
+    {
+        if (!$this->assignedRole) {
+            return false;
+        }
+
+        // Super Admin bypass (optional, but good practice)
+        if ($this->assignedRole->slug === 'super-admin') {
+            return true;
+        }
+
+        return $this->assignedRole->permissions->contains('slug', $permission);
+    }
 
     /**
      * The attributes that should be hidden for arrays.
@@ -26,6 +57,39 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
+
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if user is agent
+     */
+    public function isAgent()
+    {
+        return $this->role === 'agent';
+    }
+
+    /**
+     * Get customers assigned to this agent
+     */
+    public function customers()
+    {
+        return $this->hasMany(Customer::class, 'agent_id');
+    }
+
+    /**
+     * Get transactions for this agent
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'agent_id');
+    }
 }

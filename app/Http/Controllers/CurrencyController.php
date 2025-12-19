@@ -2,227 +2,142 @@
 
 namespace App\Http\Controllers;
 
+use App\Currency;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Hash;
-
-use Auth;
-use Log;
+use Illuminate\Support\Facades\Auth;
 
 class CurrencyController extends Controller
 {
     /**
-     * Create a new controller instance.
-     *
-     * @return void
+     * Display a listing of currencies
      */
-    public function __construct()
+    public function index(Request $request)
     {
-        $this->middleware('auth');
+        $query = Currency::with('creator');
+
+        // Filter by status
+        if ($request->has('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        // Search by code or name
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
+
+        $currencies = $query->orderBy('code')->paginate(20);
+
+        return view('currencies.index', compact('currencies'));
     }
 
     /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Http\Response
+     * Show the form for creating a new currency
      */
-
-    public static function getList(Request $request)
+    public function create()
     {
-        try
-        {
-            $page = $request->input('page');
-            $orderBy = $request->input('order_by');
-            $orderType = $request->input('order_type');
-
-            $code = $request->input('code');
-            $name = $request->input('name');
-
-            $code = ($code === null) ? "%" : "%$code%";
-            $name = ($name === null) ? "%" : "%$name%";
-
-            $sql = "
-                SELECT a.id, a.code, a.name, a.status, a.symbol, b.buy_rate, b.sell_rate
-                FROM currencies a
-                INNER JOIN exchange_rates b
-                    ON a.id = b.currency_id
-                WHERE a.code LIKE :code
-                    OR a.name LIKE :name
-            ";
-
-            $params = [
-                'code' => $code,
-                'name' => $name
-            ];
-            
-            $orderByAllow = ['code, name, status'];
-            $orderByDefault = 'code asc';
-
-            $sql = Helper::appendOrderBy($sql, $orderBy, $orderType, $orderByAllow, $orderByDefault);
-            $data = Helper::paginateData($sql, $params, $page);
-
-            $aryStatus = self::getStatusOptions();
-
-            foreach ($data['results'] as $d)
-            {
-                $d->status_desc = Helper::getOptionsValue($aryStatus, $d->status);
-            }
-
-            return json_encode(['status' => 1, 'data' => $data]);
-        }
-        catch (\Exception $e)
-        {
-            Log::error($e);
-            return json_encode(['status' => 0, 'error' => 'Internal Error']);
-        }
+        return view('currencies.create');
     }
 
-    public static function createCurrency(Request $request)
+    /**
+     * Store a newly created currency
+     */
+    public function store(Request $request)
     {
-        try
-        {
-            $code = $request->input('code');
-            $name = $request->input('name');
-            $symbol = $request->input('symbol');
-            $buyRate = $request->input('buy_rate');
-            $sellRate = $request->input('sell_rate');
-            $status = $request->input('status');
+        $validated = $request->validate([
+            'code' => 'required|string|max:1|unique:currencies,code',
+            'name' => 'required|string|max:100',
+            'symbol' => 'required|string|max:10',
+            'is_active' => 'boolean',
+        ]);
 
-            $code = strtoupper( trim($code) );
-            $name = trim($name);
-            $symbol = trim($symbol);
-            
-            $db = DB::SELECT("SELECT 1 FROM currencies WHERE code = ?", [$code]);
+        $validated['created_by'] = Auth::id();
+        $validated['is_active'] = $request->has('is_active') ? true : false;
 
-            if (count($db) > 0)
-            {
-                return json_encode(['status' => 0, 'error' => "Code duplicate. There is currency created with the same code."]);
-            }
+        Currency::create($validated);
 
-            if (!is_numeric($buyRate))
-            {
-                return json_encode(['status' => 0, 'error' => "Buy Rate field only allow contains numeric value"]);
-            }
-
-            if (!is_numeric($buyRate))
-            {
-                return json_encode(['status' => 0, 'error' => "Sell Rate field only allow contains numeric value"]);
-            }
-
-            if ($buyRate < 0)
-            {
-                return json_encode(['status' => 0, 'error' => "Buy Rate must greater than 0"]);
-            }
-
-            if (!is_numeric($buyRate))
-            {
-                return json_encode(['status' => 0, 'error' => "Sell Rate must greater than 0"]);
-            }
-
-            if (!in_array($status, [0, 1]))
-            {
-                return json_encode(['status' => 0, 'error' => "Status Invalid"]);
-            }
-
-            DB::INSERT("
-                INSERT INTO currencies (`code`, `name`, `symbol`, `status`, `created_at`)
-                VALUES (?, ?, ?, ?, NOW())
-            ", [$code, $name, $symbol, $status]);
-
-            $currencyId = DB::getPdo()->lastInsertId();
-
-            DB::INSERT("
-                INSERT INTO exchange_rates (`currency_id`, `buy_rate`, `sell_rate`, `created_at`)
-                VALUES (?, ?, ?, NOW())
-            ", [$currencyId, $buyRate, $sellRate]);
-
-            return json_encode(['status' => 1]);
-        }
-        catch (\Exception $e)
-        {
-            Log::error($e);
-            return json_encode(['status' => 0, 'error' => 'Internal Error']);
-        }
+        return redirect()->route('currencies.index')
+            ->with('success', 'Currency created successfully');
     }
 
-    public static function edit(Request $request)
+    /**
+     * Show the form for editing the specified currency
+     */
+    public function edit($id)
     {
-        try
-        {
-            $id = $request->input('id');
-            $name = $request->input('name');
-            $symbol = $request->input('symbol');
-            $buyRate = $request->input('buy_rate');
-            $sellRate = $request->input('sell_rate');
-            $status = $request->input('status');
-
-            $name = trim($name);
-            $symbol = trim($symbol);
-            
-            $db = DB::SELECT("SELECT 1 FROM currencies WHERE id = ?", [$id]);
-
-            if (count($db) == 0)
-            {
-                return json_encode(['status' => 0, 'error' => "Invalid Currency"]);
-            }
-
-            if (!is_numeric($buyRate))
-            {
-                return json_encode(['status' => 0, 'error' => "Buy Rate field only allow contains numeric value"]);
-            }
-
-            if (!is_numeric($buyRate))
-            {
-                return json_encode(['status' => 0, 'error' => "Sell Rate field only allow contains numeric value"]);
-            }
-
-            if ($buyRate < 0)
-            {
-                return json_encode(['status' => 0, 'error' => "Buy Rate must greater than 0"]);
-            }
-
-            if (!is_numeric($buyRate))
-            {
-                return json_encode(['status' => 0, 'error' => "Sell Rate must greater than 0"]);
-            }
-
-            if (!in_array($status, [0, 1]))
-            {
-                return json_encode(['status' => 0, 'error' => "Status Invalid"]);
-            }
-
-            DB::UPDATE("
-                UPDATE currencies 
-                SET name = ?,
-                    symbol = ?,
-                    status = ?,
-                    updated_at = NOW()
-                WHERE id = ?
-            ", [$name, $symbol, $status, $id]);
-
-            DB::UPDATE("
-                UPDATE exchange_rates 
-                SET buy_rate = ?,
-                    sell_rate = ?,
-                    updated_at = NOW()
-                WHERE currency_id = ?
-            ", [$buyRate, $sellRate, $id]);
-
-            return json_encode(['status' => 1]);
-        }
-        catch (\Exception $e)
-        {
-            Log::error($e);
-            return json_encode(['status' => 0, 'error' => 'Internal Error']);
-        }
+        $currency = Currency::findOrFail($id);
+        return view('currencies.edit', compact('currency'));
     }
 
-    public static function getStatusOptions()
+    /**
+     * Update the specified currency
+     */
+    public function update(Request $request, $id)
     {
-        return [
-            [0, 'Inactive'],
-            [1, 'Active']
-        ];
+        $currency = Currency::findOrFail($id);
+
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:currencies,code,' . $id,
+            'name' => 'required|string|max:100',
+            'symbol' => 'required|string|max:10',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->has('is_active') ? true : false;
+
+        $currency->update($validated);
+
+        return redirect()->route('currencies.index')
+            ->with('success', 'Currency updated successfully');
+    }
+
+    /**
+     * Remove the specified currency
+     */
+    public function destroy($id)
+    {
+        $currency = Currency::findOrFail($id);
+
+        // Check if currency is used in exchange rates or transactions
+        if ($currency->exchangeRatesFrom()->count() > 0 || $currency->exchangeRatesTo()->count() > 0) {
+            return redirect()->route('currencies.index')
+                ->with('error', 'Cannot delete currency that is used in exchange rates');
+        }
+
+        $currency->delete();
+
+        return redirect()->route('currencies.index')
+            ->with('success', 'Currency deleted successfully');
+    }
+
+    /**
+     * Activate a currency
+     */
+    public function activate($id)
+    {
+        $currency = Currency::findOrFail($id);
+        $currency->update(['is_active' => true]);
+
+        return redirect()->route('currencies.index')
+            ->with('success', 'Currency activated successfully');
+    }
+
+    /**
+     * Deactivate a currency
+     */
+    public function deactivate($id)
+    {
+        $currency = Currency::findOrFail($id);
+        $currency->update(['is_active' => false]);
+
+        return redirect()->route('currencies.index')
+            ->with('success', 'Currency deactivated successfully');
     }
 }

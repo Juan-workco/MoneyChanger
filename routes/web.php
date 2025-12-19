@@ -9,137 +9,65 @@
 | routes are loaded by the RouteServiceProvider within a group which
 | contains the "web" middleware group. Now create something great!
 |
- */
+*/
 
-/*
-|--------------------------------------------------------------------------
-| Authentication Routes
-|--------------------------------------------------------------------------
- */
-// Route::get('/', 'Auth\LoginController@showLoginForm')->name('/');
+// Authentication Routes
+Route::get('/login', 'AuthController@showLogin')->name('login');
+Route::post('/login', 'AuthController@login');
+Route::post('/logout', 'AuthController@logout')->name('logout');
+Route::get('/password/reset', 'AuthController@showResetPassword')->name('password.reset');
+Route::post('/password/update', 'AuthController@updatePassword')->name('password.update');
 
-Route::get('/', function() {
+// Protected Routes
+Route::middleware(['auth'])->group(function () {
 
-	if(Auth::user())
-	{            
-		return redirect('/home');
-	}
-	else
-	{
-		return redirect(route('login'));  
-	}
+    // Dashboard
+    Route::get('/', 'DashboardController@index')->name('dashboard');
+    Route::get('/dashboard', 'DashboardController@index');
+
+    // Currency Management
+    Route::resource('currencies', 'CurrencyController');
+    Route::post('currencies/{id}/activate', 'CurrencyController@activate')->name('currencies.activate');
+    Route::post('currencies/{id}/deactivate', 'CurrencyController@deactivate')->name('currencies.deactivate');
+
+    // Customer Management
+    Route::resource('customers', 'CustomerController');
+    Route::get('customers/{id}/transactions', 'CustomerController@transactionHistory')->name('customers.transactions');
+
+    // Exchange Rates
+    Route::get('exchange-rates/get-active', 'ExchangeRateController@getActiveRate')->name('exchange-rates.get-active');
+    Route::resource('exchange-rates', 'ExchangeRateController');
+
+
+    // Transactions
+    Route::post('transactions/bulk-update-status', 'TransactionController@bulkUpdateStatus')->name('transactions.bulk-update-status');
+    Route::post('transactions/{id}/status', 'TransactionController@updateStatus')->name('transactions.update-status');
+    Route::resource('transactions', 'TransactionController');
+    Route::get('transactions-search', 'TransactionController@search')->name('transactions.search');
+
+    // Roles & Permissions
+    Route::resource('roles', 'RoleController')->middleware('permission:manage_roles');
+
+    // Reports
+    Route::group(['middleware' => ['permission:view_reports']], function () {
+        Route::get('reports/daily', 'ReportController@dailyReport')->name('reports.daily');
+        Route::get('reports/balance-sheet', 'ReportController@balanceSheet')->name('reports.balance-sheet');
+        Route::get('reports/profit-loss', 'ReportController@profitLoss')->name('reports.profit-loss');
+        Route::get('reports/commission', 'ReportController@commissionReport')->name('reports.commission');
+        Route::get('reports/export-pdf', 'ReportController@exportPDF')->name('reports.export-pdf');
+        Route::get('reports/export-profit-loss-pdf', 'ReportController@exportProfitLossPDF')->name('reports.export-profit-loss-pdf');
+    });
+
+    // Settings
+    Route::group(['middleware' => ['permission:manage_settings']], function () {
+        Route::get('settings', 'SettingsController@index')->name('settings.index');
+        Route::post('settings/general', 'SettingsController@updateGeneral')->name('settings.update-general');
+        Route::get('settings/accounts', 'SettingsController@accounts')->name('settings.accounts');
+        Route::post('settings/accounts', 'SettingsController@storeAccount')->name('settings.store-account');
+        Route::put('settings/accounts/{id}', 'SettingsController@updateAccount')->name('settings.update-account');
+        Route::delete('settings/accounts/{id}', 'SettingsController@deleteAccount')->name('settings.delete-account');
+        Route::get('settings/payment-methods', 'SettingsController@paymentMethods')->name('settings.payment-methods');
+        Route::post('settings/payment-methods', 'SettingsController@updatePaymentMethods')->name('settings.update-payment-methods');
+    });
+
 });
-
-Route::get('login', 'Auth\LoginController@showLoginForm')->name('login');
-Route::post('login', 'Auth\LoginController@login');
-Route::post('logout', 'Auth\LoginController@logout')->name('logout');
-Route::get('/auth/changepassword', 'ViewControllers\PasswordViewController@changePasswordView')->name('changepassword');
-Route::post('/currency', 'Currency@setCurrency')->name('currency');
-
-// ajax
-Route::post('/ajax/accounts/change_password', 'PasswordController@changePassword');
-
-/*
-|--------------------------------------------------------------------------
-| Locale Routes
-|--------------------------------------------------------------------------
- */
-
-Route::get('/locale', function () {
-	return abort(404);
-});
-Route::post('/locale', 'Locale@setLocale')->name('locale');
-
-/*
-|--------------------------------------------------------------------------
-| Home Routes
-|--------------------------------------------------------------------------
- */
-Route::get('/home', 'ViewControllers\HomeViewController@index');
-
-/*
-|--------------------------------------------------------------------------
-| Dashboard Routes
-|--------------------------------------------------------------------------
- */
-
-Route::get('/dashboard', 'ViewControllers\DashboardViewController@index');
-
-/*
-|--------------------------------------------------------------------------
-| Remittance Routes
-|--------------------------------------------------------------------------
- */
-
-Route::get('/remittance', 'ViewControllers\RemittanceViewController@index');
-Route::get('/ajax/remittance/list', 'ViewControllers\RemittanceViewController@getList');
-
-Route::get('/remittance/new', 'ViewControllers\RemittanceViewController@create');
-Route::post('/ajax/remittance/new', 'ViewControllers\RemittanceViewController@createRemittance');
-
-/*
-|--------------------------------------------------------------------------
-| Customer Routes
-|--------------------------------------------------------------------------
- */
-
-Route::get('/customer/list', 'ViewControllers\CustomerViewController@index');
-Route::get('/ajax/customer/list', 'ViewControllers\CustomerViewController@getList');
-Route::post('/ajax/customer/new', 'ViewControllers\CustomerViewController@createCustomer');
-Route::post('/ajax/customer/edit', 'ViewControllers\CustomerViewController@editCustomer');
-
-/*
-|--------------------------------------------------------------------------
-| Currency Routes
-|--------------------------------------------------------------------------
- */
-
-Route::get('/currency/new', 'ViewControllers\CurrencyViewController@new');
-Route::post('/ajax/currency/create', 'ViewControllers\CurrencyViewController@createCurrency');
-
-Route::get('/currency/list', 'ViewControllers\CurrencyViewController@index');
-Route::get('/ajax/currency/list', 'ViewControllers\CurrencyViewController@getList');
-Route::post('/ajax/currency/edit', 'ViewControllers\CurrencyViewController@edit');
-
-/*
-|--------------------------------------------------------------------------
-| Admin Routes
-|--------------------------------------------------------------------------
- */
-
-//admin roles
-Route::get('/admins/roles', 'ViewControllers\AdminViewController@rolesDetails');
-Route::get('/admins/roles/new', 'ViewControllers\AdminViewController@newRoles');
-Route::get('/admins/roles/permission', 'ViewControllers\AdminViewController@editRoles');
-
-//ajax admin roles
-Route::post('/ajax/admins/roles/create', 'ViewControllers\AdminViewController@createRoles');
-Route::get('/ajax/admins/roles/list', 'ViewControllers\AdminViewController@getRolesList');
-Route::post('/ajax/admins/roles/delete', 'ViewControllers\AdminViewController@deleteRole');
-Route::get('/ajax/admins/roles/permission', 'ViewControllers\AdminViewController@getRolesPermission');
-Route::post('/ajax/admins/roles/update', 'ViewControllers\AdminViewController@editRolesPermission');
-
-/*
-|--------------------------------------------------------------------------
-| Payment Routes
-|--------------------------------------------------------------------------
- */
-
-Route::get('/payment/method', 'ViewControllers\PaymentViewController@paymentMethod');
-Route::get('/ajax/payment/method/list', 'ViewControllers\PaymentViewController@getPaymentMethodList');
-Route::post('/ajax/payment/method/new', 'ViewControllers\PaymentViewController@createPaymentMethod');
-Route::post('/ajax/payment/method/update', 'ViewControllers\PaymentViewController@updatePaymentMethod');
-
-Route::get('/payment/account', 'ViewControllers\PaymentViewController@paymentAccount');
-Route::get('/ajax/payment/account/list', 'ViewControllers\PaymentViewController@getPaymentAccountList');
-Route::post('/ajax/payment/account/new', 'ViewControllers\PaymentViewController@createPaymentAccount');
-
-
-/*
-|--------------------------------------------------------------------------
-| Payment Routes
-|--------------------------------------------------------------------------
- */
-
-Route::get('/setting/system', 'ViewControllers\SettingViewController@index');
-Route::post('/ajax/setting/system/update', 'ViewControllers\SettingViewController@updateSetting');
