@@ -148,6 +148,15 @@
                     </li>
                     @endif
 
+                    @if(Auth::user()->hasPermission('manage_users'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('users*') ? 'active' : '' }}"
+                                href="{{ route('users.index') }}">
+                                <i class="nav-icon fas fa-users-cog"></i> Users
+                            </a>
+                        </li>
+                    @endif
+
                     @if(Auth::user()->hasPermission('manage_roles'))
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is('roles*') ? 'active' : '' }}" 

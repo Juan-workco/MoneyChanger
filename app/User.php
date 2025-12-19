@@ -92,4 +92,71 @@ class User extends Authenticatable
     {
         return $this->hasMany(Transaction::class, 'agent_id');
     }
+
+    // --- Permission Helpers ---
+
+    public function isSuperAdminUser()
+    {
+        return $this->super_admin == 1;
+    }
+
+    public function isSuperAdminRole()
+    {
+        return $this->assignedRole && $this->assignedRole->slug === 'super-admin';
+    }
+
+    public function isAdminRole()
+    {
+        return $this->assignedRole && $this->assignedRole->slug === 'admin';
+    }
+
+    public function canManageUser($targetUser)
+    {
+        // Self management (Edit only, Delete handled in controller)
+        if ($this->id === $targetUser->id) {
+            return true;
+        }
+
+        // Super Admin User (Column = 1) can manage everyone
+        if ($this->isSuperAdminUser()) {
+            return true;
+        }
+
+        // Super Admin Role
+        if ($this->isSuperAdminRole()) {
+            // Cannot manage Super Admin User or other Super Admin Roles
+            if ($targetUser->isSuperAdminUser() || $targetUser->isSuperAdminRole()) {
+                return false;
+            }
+            return true; // Can manage Admin and Agent roles
+        }
+
+        // Admin Role
+        if ($this->isAdminRole()) {
+            // Can only manage Agents
+            if ($targetUser->isSuperAdminUser() || $targetUser->isSuperAdminRole() || $targetUser->isAdminRole()) {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    public function allowedRoles()
+    {
+        if ($this->isSuperAdminUser()) {
+            return Role::all();
+        }
+
+        if ($this->isSuperAdminRole()) {
+            return Role::where('slug', '!=', 'super-admin')->get();
+        }
+
+        if ($this->isAdminRole()) {
+            return Role::where('slug', 'agent')->get();
+        }
+
+        return collect([]);
+    }
 }

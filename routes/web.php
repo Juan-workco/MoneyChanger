@@ -48,6 +48,9 @@ Route::middleware(['auth'])->group(function () {
     // Roles & Permissions
     Route::resource('roles', 'RoleController')->middleware('permission:manage_roles');
 
+    // User Management
+    Route::resource('users', 'UserController')->middleware('permission:manage_users');
+
     // Reports
     Route::group(['middleware' => ['permission:view_reports']], function () {
         Route::get('reports/daily', 'ReportController@dailyReport')->name('reports.daily');

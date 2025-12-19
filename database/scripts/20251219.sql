@@ -166,8 +166,36 @@ CREATE TABLE `permission_role` (
   KEY `permission_role_role_id_foreign` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO users (`username`,`name`,`email`,`password`,`role`,`status`)
-VALUES ('adm1','Admin','admin@moneychanger.com','$2y$10$j.6RT.cjlqJWsI/ZfuHJ1OodEcG/7EDGiKOK72ZaRQgQcYUao2bbO','admin','active');
+-- Users (Admin)
+INSERT INTO `users` (`username`, `name`, `email`, `password`, `role`, `role_id`, `status`, `super_admin`, `remember_token`, `last_login_at`, `created_at`, `updated_at`) VALUES
+('admin', 'Admin', 'admin@moneychanger.com', '$2y$10$j.6RT.cjlqJWsI/ZfuHJ1OodEcG/7EDGiKOK72ZaRQgQcYUao2bbO', 'admin', 1, 'active', 1, NULL, NULL, NOW(), NOW());
 
-INSERT INTO currencies (`code`,`name`,`symbol`)
-VALUES (`MYR`,`Malaysian Ringgit`,`RM`),(`THB`,`Thai Baht`,`฿`),(`USD`,`US Dollar`,`$`),(`SGD`,`Singapore Dollar`,`S$`)
+-- Roles
+INSERT INTO `roles` (`name`, `slug`, `description`, `created_at`, `updated_at`) VALUES
+('Super Admin', 'super-admin', 'Full access to everything', NOW(), NOW()),
+('Agent', 'agent', 'Standard agent access', NOW(), NOW());
+
+-- Permissions
+INSERT INTO `permissions` (`name`, `slug`, `description`, `created_at`, `updated_at`) VALUES
+('View Reports', 'view_reports', 'Access to view all reports', NOW(), NOW()),
+('Manage Settings', 'manage_settings', 'Access to system settings', NOW(), NOW()),
+('Manage Roles', 'manage_roles', 'Create and edit roles', NOW(), NOW()),
+('Manage Users', 'manage_users', 'Create and edit users', NOW(), NOW());
+
+-- Permission Role (Super Admin id=1 gets all permissions 1-4)
+INSERT INTO `permission_role` (`permission_id`, `role_id`) VALUES
+(1, 1), (2, 1), (3, 1), (4, 1);
+
+-- Currencies
+INSERT INTO `currencies` (`code`, `name`, `symbol`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
+('MYR', 'Malaysian Ringgit', 'RM', 1, 1, NOW(), NOW()),
+('THB', 'Thai Baht', '฿', 1, 1, NOW(), NOW()),
+('USD', 'US Dollar', '$', 1, 1, NOW(), NOW()),
+('SGD', 'Singapore Dollar', 'S$', 1, 1, NOW(), NOW());
+
+-- System Settings
+-- Payment methods JSON: ["Cash","Bank Transfer","USDT","Online Banking"]
+INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_type`, `created_at`, `updated_at`) VALUES
+('payment_methods', '[\"Cash\",\"Bank Transfer\",\"USDT\"]', 'payment_method', NOW(), NOW()),
+('app_name', 'Money Changer', 'general', NOW(), NOW()),
+('default_currency', 'MYR', 'general', NOW(), NOW());
