@@ -3,37 +3,42 @@
 @section('title', 'Transactions - Money Changer Admin')
 
 @section('content')
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <div
+        class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Transactions</h1>
-        <a href="{{ route('transactions.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> New Transaction
-        </a>
+        @if(Auth::user()->hasPermission('manage_transactions'))
+            <a href="{{ route('transactions.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Transaction
+            </a>
+        @endif
     </div>
 
     <!-- Bulk Actions Bar -->
-    <div class="card mb-3" id="bulk-actions-bar" style="display: none;">
-        <div class="card-body bg-light">
-            <div class="d-flex align-items-center">
-                <span class="mr-3">
-                    <strong><span id="selected-count">0</span> selected</strong>
-                </span>
-                <div class="btn-group mr-2">
-                    <button type="button" class="btn btn-success" onclick="bulkStatusChange('accept')">
-                        <i class="fas fa-check"></i> Accept
-                    </button>
-                    <button type="button" class="btn btn-danger" onclick="bulkStatusChange('cancel')">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="button" class="btn btn-info" onclick="bulkStatusChange('sent')">
-                        <i class="fas fa-paper-plane"></i> Mark as Sent
+    @if(Auth::user()->hasPermission('manage_transactions'))
+        <div class="card mb-3" id="bulk-actions-bar" style="display: none;">
+            <div class="card-body bg-light">
+                <div class="d-flex align-items-center">
+                    <span class="mr-3">
+                        <strong><span id="selected-count">0</span> selected</strong>
+                    </span>
+                    <div class="btn-group mr-2">
+                        <button type="button" class="btn btn-success" onclick="bulkStatusChange('accept')">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="bulkStatusChange('cancel')">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="bulkStatusChange('sent')">
+                            <i class="fas fa-paper-plane"></i> Mark as Sent
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
+                        Clear Selection
                     </button>
                 </div>
-                <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
-                    Clear Selection
-                </button>
             </div>
         </div>
-    </div>
+    @endif
 
     <!-- Filters -->
     <div class="card mb-4">
@@ -69,9 +74,11 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th width="30">
-                                <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
-                            </th>
+                            @if(Auth::user()->hasPermission('manage_transactions'))
+                                <th width="30">
+                                    <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
+                                </th>
+                            @endif
                             <th>Date</th>
                             <th>Code</th>
                             <th>Customer</th>
@@ -85,17 +92,23 @@
                     <tbody>
                         @forelse($transactions as $transaction)
                             <tr>
-                                <td>
-                                    <input type="checkbox" class="transaction-checkbox" value="{{ $transaction->id }}"
-                                        data-status="{{ $transaction->status }}" onclick="updateBulkActions()">
-                                </td>
+                                @if(Auth::user()->hasPermission('manage_transactions'))
+                                    <td>
+                                        <input type="checkbox" class="transaction-checkbox" value="{{ $transaction->id }}"
+                                            data-status="{{ $transaction->status }}" onclick="updateBulkActions()">
+                                    </td>
+                                @endif
                                 <td>{{ $transaction->transaction_date->format('Y-m-d H:i') }}</td>
                                 <td>
                                     <a href="{{ route('transactions.show', $transaction->id) }}">
                                         <strong>{{ $transaction->transaction_code }}</strong>
                                     </a>
                                 </td>
-                                <td>{{ $transaction->customer->name }}</td>
+                                <td>
+                                    <a href="{{ route('customers.show', $transaction->customer_id) }}">
+                                        {{ $transaction->customer->name }}
+                                    </a>
+                                </td>
                                 <td>{{ number_format($transaction->amount_from, 2) }} {{ $transaction->currencyFrom->code }}
                                 </td>
                                 <td>{{ number_format($transaction->amount_to, 2) }} {{ $transaction->currencyTo->code }}</td>

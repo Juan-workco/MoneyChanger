@@ -3,11 +3,14 @@
 @section('title', 'Customers - Money Changer Admin')
 
 @section('content')
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <div
+        class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Customers</h1>
-        <a href="{{ route('customers.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Add New Customer
-        </a>
+        @if(Auth::user()->hasPermission('manage_customers'))
+            <a href="{{ route('customers.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Customer
+            </a>
+        @endif
     </div>
 
     <div class="card">
@@ -27,7 +30,9 @@
                         @forelse($customers as $customer)
                             <tr>
                                 <td>
-                                    <strong>{{ $customer->name }}</strong><br>
+                                    <a href="{{ route('customers.show', $customer->id) }}">
+                                        <strong>{{ $customer->name }}</strong>
+                                    </a><br>
                                     <small class="text-muted">{{ $customer->country }}</small>
                                 </td>
                                 <td>
@@ -43,10 +48,12 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('customers.edit', $customer->id) }}"
-                                        class="btn btn-sm btn-info text-white" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    @if(Auth::user()->hasPermission('manage_customers'))
+                                        <a href="{{ route('customers.edit', $customer->id) }}"
+                                            class="btn btn-sm btn-info text-white" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    @endif
                                     <a href="{{ route('customers.transactions', $customer->id) }}"
                                         class="btn btn-sm btn-secondary" title="View Transactions">
                                         <i class="fas fa-history"></i>

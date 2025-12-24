@@ -140,9 +140,7 @@ class TransactionController extends Controller
                 'buy_rate' => $buyRate,
                 'sell_rate' => $sellRate,
                 'profit_amount' => $profit,
-                'agent_commission' => (Auth::user()->role === 'agent' && Auth::user()->commission_rate > 0)
-                    ? ($profit * (Auth::user()->commission_rate / 100))
-                    : 0,
+                'agent_commission' => 0,
                 'status' => 'pending',
                 'created_by' => Auth::id(),
             ]);
@@ -238,16 +236,6 @@ class TransactionController extends Controller
                 $request->amount_from
             );
             $validated['profit_amount'] = $profit;
-
-            // Recalculate commission if transaction belongs to an agent
-            if ($transaction->creator && $transaction->creator->role === 'agent') {
-                $agent = $transaction->creator;
-                if ($agent && $agent->commission_rate > 0) {
-                    $validated['agent_commission'] = $profit * ($agent->commission_rate / 100);
-                } else {
-                    $validated['agent_commission'] = 0;
-                }
-            }
         }
 
         $transaction->update($validated);

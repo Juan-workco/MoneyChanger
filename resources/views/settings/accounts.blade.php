@@ -3,7 +3,7 @@
 @section('title', 'Receiving Accounts - Money Changer Admin')
 
 @section('content')
-    <div class="page-header">
+    <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Receiving Accounts</h1>
     </div>
 
@@ -26,9 +26,11 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span>Manage Accounts</span>
-                    <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#addAccountModal">
-                        <i class="fas fa-plus"></i> Add Account
-                    </button>
+                    @if(Auth::user()->hasPermission('manage_settings'))
+                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#addAccountModal">
+                            <i class="fas fa-plus"></i> Add Account
+                        </button>
+                    @endif
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -57,6 +59,7 @@
                                                 <span class="badge badge-secondary">Inactive</span>
                                             @endif
                                         </td>
+                                        @if(Auth::user()->hasPermission('manage_settings'))
                                         <td>
                                             <button class="btn btn-sm btn-info text-white edit-account-btn"
                                                 data-id="{{ $account->id }}" data-type="{{ $account->account_type }}"
@@ -76,6 +79,7 @@
                                                 </button>
                                             </form>
                                         </td>
+                                        @endif
                                     </tr>
                                 @empty
                                     <tr>

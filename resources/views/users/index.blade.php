@@ -8,9 +8,11 @@
             <div class="card">
                 <div class="card-header">
                     <i class="fa fa-users"></i> Users Management
-                    <a href="{{ route('users.create') }}" class="btn btn-primary float-right">
-                        <i class="fa fa-plus"></i> Add User
-                    </a>
+                    @if(auth()->user()->hasPermission('manage_users'))
+                        <a href="{{ route('users.create') }}" class="btn btn-primary float-right">
+                            <i class="fa fa-plus"></i> Add User
+                        </a>
+                    @endif
                 </div>
                 <div class="card-body">
                     <table class="table table-responsive-sm table-striped">

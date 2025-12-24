@@ -138,12 +138,16 @@ class Transaction extends Model
     public function updateStatus($newStatus)
     {
         $this->status = $newStatus;
-        $this->save();
 
-        // Update customer stats if sent
+        // Calculate commission if sent and creator is an agent
         if ($newStatus === 'sent') {
+            if ($this->creator && $this->creator->role === 'agent' && $this->creator->commission_rate > 0) {
+                $this->agent_commission = $this->profit_amount * ($this->creator->commission_rate / 100);
+            }
             $this->customer->updateTransactionStats();
         }
+
+        $this->save();
     }
 
     /**

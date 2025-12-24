@@ -3,7 +3,7 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    <div class="page-header">
+    <div class="page-header d-flex flex-column flex-md-column border-bottom pb-3 pt-sm-3">
         <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
         <p class="text-muted">Welcome back, {{ Auth::user()->name }}!</p>
     </div>

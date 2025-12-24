@@ -3,7 +3,7 @@
 @section('title', 'Daily Report - Money Changer Admin')
 
 @section('content')
-    <div class="page-header">
+    <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Daily Transaction Report</h1>
     </div>
 

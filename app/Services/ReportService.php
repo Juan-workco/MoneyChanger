@@ -35,8 +35,6 @@ class ReportService
             'transactions' => $transactions,
         ];
 
-        Log::debug($data);
-
         return $data;
     }
 

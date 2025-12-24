@@ -3,11 +3,14 @@
 @section('title', 'Exchange Rates - Money Changer Admin')
 
 @section('content')
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <div
+        class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Exchange Rates</h1>
-        <a href="{{ route('exchange-rates.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Add New Rate
-        </a>
+        @if(Auth::user()->hasPermission('manage_exchange_rates'))
+            <a href="{{ route('exchange-rates.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Rate
+            </a>
+        @endif
     </div>
 
     <div class="card">
@@ -21,7 +24,9 @@
                             <th>Sell Rate</th>
                             <th>Effective Date</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            @if(Auth::user()->hasPermission('manage_exchange_rates'))
+                                <th>Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -42,12 +47,14 @@
                                         <span class="badge badge-secondary badge-status">Inactive</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <a href="{{ route('exchange-rates.edit', $rate->id) }}"
-                                        class="btn btn-sm btn-info text-white" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </td>
+                                @if(Auth::user()->hasPermission('manage_exchange_rates'))
+                                    <td>
+                                        <a href="{{ route('exchange-rates.edit', $rate->id) }}"
+                                            class="btn btn-sm btn-info text-white" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>

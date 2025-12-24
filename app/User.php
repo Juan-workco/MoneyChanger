@@ -49,8 +49,6 @@ class User extends Authenticatable
             return true;
         }
 
-        Log::debug($this->assignedRole->permissions);
-
         return $this->assignedRole->permissions->contains('slug', $permission);
     }
 

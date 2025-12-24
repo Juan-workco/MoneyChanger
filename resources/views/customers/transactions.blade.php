@@ -3,7 +3,8 @@
 @section('title', 'Customer Transactions - Money Changer Admin')
 
 @section('content')
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <div
+        class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Transactions: {{ $customer->name }}</h1>
         <a href="{{ route('customers.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Customers

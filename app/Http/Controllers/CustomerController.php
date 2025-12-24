@@ -189,8 +189,6 @@ class CustomerController extends Controller
             ->orderBy('transaction_date', 'desc')
             ->paginate(20);
 
-        log::debug($transactions);
-
         return view('customers.transactions', compact('customer', 'transactions'));
     }
 }
