@@ -49,7 +49,7 @@ class CommissionService
      */
     public function getAgentCommissionTotal($agentId, $startDate, $endDate)
     {
-        return Transaction::where('agent_id', $agentId)
+        return Transaction::where('created_by', $agentId)
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->where('status', 'sent')
             ->sum('agent_commission');
@@ -66,13 +66,12 @@ class CommissionService
         $startDate = date('Y-m-01', strtotime($month));
         $endDate = date('Y-m-t', strtotime($month));
 
-        $query = Transaction::with('agent')
-            ->whereNotNull('agent_id')
+        $query = Transaction::with('creator')
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->where('status', 'sent');
 
         if ($agentId) {
-            $query->where('agent_id', $agentId);
+            $query->where('created_by', $agentId);
         }
 
         $transactions = $query->get();
@@ -80,11 +79,16 @@ class CommissionService
         $report = [];
 
         foreach ($transactions as $transaction) {
-            $agentId = $transaction->agent_id;
+            $creatorId = $transaction->created_by;
 
-            if (!isset($report[$agentId])) {
-                $report[$agentId] = (object) [
-                    'agent_name' => $transaction->agent->name ?? 'Unknown',
+            // Only count commissions for users who are agents
+            if (!$transaction->creator || $transaction->creator->role !== 'agent') {
+                continue;
+            }
+
+            if (!isset($report[$creatorId])) {
+                $report[$creatorId] = (object) [
+                    'agent_name' => $transaction->creator->name ?? 'Unknown',
                     'transaction_count' => 0,
                     'total_volume' => 0,
                     'total_commission' => 0,
@@ -92,9 +96,9 @@ class CommissionService
                 ];
             }
 
-            $report[$agentId]->transaction_count++;
-            $report[$agentId]->total_volume += $transaction->amount_from;
-            $report[$agentId]->total_commission += $transaction->agent_commission;
+            $report[$creatorId]->transaction_count++;
+            $report[$creatorId]->total_volume += $transaction->amount_from;
+            $report[$creatorId]->total_commission += $transaction->agent_commission;
         }
 
         return array_values($report);

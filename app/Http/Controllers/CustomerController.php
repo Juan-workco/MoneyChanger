@@ -87,6 +87,11 @@ class CustomerController extends Controller
             }
         ])->findOrFail($id);
 
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $customer->agent_id !== Auth::id()) {
+            return redirect()->route('customers.index')->with('error', 'You are not authorized to view this customer.');
+        }
+
         $stats = [
             'total_transactions' => $customer->transactions()->count(),
             'sent_transactions' => $customer->transactions()->where('status', 'sent')->count(),
@@ -103,6 +108,12 @@ class CustomerController extends Controller
     public function edit($id)
     {
         $customer = Customer::findOrFail($id);
+
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $customer->agent_id !== Auth::id()) {
+            return redirect()->route('customers.index')->with('error', 'You are not authorized to edit this customer.');
+        }
+
         // No need to pass agents - will use logged-in user
         return view('customers.edit', compact('customer'));
     }
@@ -113,6 +124,11 @@ class CustomerController extends Controller
     public function update(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
+
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $customer->agent_id !== Auth::id()) {
+            return redirect()->route('customers.index')->with('error', 'You are not authorized to update this customer.');
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:200',
@@ -140,6 +156,11 @@ class CustomerController extends Controller
     {
         $customer = Customer::findOrFail($id);
 
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $customer->agent_id !== Auth::id()) {
+            return redirect()->route('customers.index')->with('error', 'You are not authorized to delete this customer.');
+        }
+
         // Check if customer has transactions
         if ($customer->transactions()->count() > 0) {
             return redirect()->route('customers.index')
@@ -158,6 +179,11 @@ class CustomerController extends Controller
     public function transactionHistory($id)
     {
         $customer = Customer::findOrFail($id);
+
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $customer->agent_id !== Auth::id()) {
+            return redirect()->route('customers.index')->with('error', 'You are not authorized to view this history.');
+        }
         $transactions = $customer->transactions()
             ->with(['currencyFrom', 'currencyTo'])
             ->orderBy('transaction_date', 'desc')

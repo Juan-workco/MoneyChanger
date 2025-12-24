@@ -28,7 +28,7 @@ class TransactionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Transaction::with(['customer', 'currencyFrom', 'currencyTo', 'agent']);
+        $query = Transaction::with(['customer', 'currencyFrom', 'currencyTo', 'creator']);
 
         // Filter by agent if user is an agent
         $user = Auth::user();
@@ -61,7 +61,13 @@ class TransactionController extends Controller
         }
 
         $transactions = $query->orderBy('transaction_date', 'desc')->paginate(20);
-        $customers = Customer::active()->orderBy('name')->get();
+
+        $customers = Customer::active()
+            ->when(Auth::user()->isAgent(), function ($query) {
+                $query->where('agent_id', Auth::user()->id);
+            })
+            ->orderBy('name')
+            ->get();
 
         return view('transactions.index', compact('transactions', 'customers'));
     }
@@ -134,7 +140,6 @@ class TransactionController extends Controller
                 'buy_rate' => $buyRate,
                 'sell_rate' => $sellRate,
                 'profit_amount' => $profit,
-                'agent_id' => Auth::user()->role === 'agent' ? Auth::id() : null,
                 'agent_commission' => (Auth::user()->role === 'agent' && Auth::user()->commission_rate > 0)
                     ? ($profit * (Auth::user()->commission_rate / 100))
                     : 0,
@@ -169,7 +174,6 @@ class TransactionController extends Controller
             'currencyFrom',
             'currencyTo',
             'exchangeRate',
-            'agent',
             'creator'
         ])->findOrFail($id);
 
@@ -187,7 +191,19 @@ class TransactionController extends Controller
     public function edit($id)
     {
         $transaction = Transaction::findOrFail($id);
-        $customers = Customer::active()->orderBy('name')->get();
+
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $transaction->created_by !== Auth::id()) {
+            return redirect()->route('transactions.index')->with('error', 'You are not authorized to edit this transaction.');
+        }
+
+        $customers = Customer::active()
+            ->when(Auth::user()->isAgent(), function ($query) {
+                $query->where('agent_id', Auth::user()->id);
+            })
+            ->orderBy('name')
+            ->get();
+
         $currencies = Currency::active()->orderBy('code')->get();
 
         return view('transactions.edit', compact('transaction', 'customers', 'currencies'));
@@ -199,6 +215,11 @@ class TransactionController extends Controller
     public function update(Request $request, $id)
     {
         $transaction = Transaction::findOrFail($id);
+
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $transaction->created_by !== Auth::id()) {
+            return redirect()->route('transactions.index')->with('error', 'You are not authorized to update this transaction.');
+        }
 
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -219,8 +240,8 @@ class TransactionController extends Controller
             $validated['profit_amount'] = $profit;
 
             // Recalculate commission if transaction belongs to an agent
-            if ($transaction->agent_id) {
-                $agent = $transaction->agent;
+            if ($transaction->creator && $transaction->creator->role === 'agent') {
+                $agent = $transaction->creator;
                 if ($agent && $agent->commission_rate > 0) {
                     $validated['agent_commission'] = $profit * ($agent->commission_rate / 100);
                 } else {
@@ -244,6 +265,12 @@ class TransactionController extends Controller
     public function destroy($id)
     {
         $transaction = Transaction::findOrFail($id);
+
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $transaction->created_by !== Auth::id()) {
+            return redirect()->route('transactions.index')->with('error', 'You are not authorized to delete this transaction.');
+        }
+
         $transaction->delete();
 
         return redirect()->route('transactions.index')
@@ -280,6 +307,10 @@ class TransactionController extends Controller
 
         if ($request->has('code')) {
             $query->where('transaction_code', 'like', '%' . $request->code . '%');
+        }
+
+        if (Auth::user()->isAgent()) {
+            $query->where('created_by', Auth::id());
         }
 
         $transactions = $query->limit(10)->get();

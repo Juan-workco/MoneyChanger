@@ -22,7 +22,6 @@ class Transaction extends Model
         'payment_method',
         'status',
         'transaction_date',
-        'agent_id',
         'agent_commission',
         'profit_amount',
         'notes',
@@ -99,13 +98,6 @@ class Transaction extends Model
         return $this->belongsTo(ExchangeRate::class);
     }
 
-    /**
-     * Get the agent
-     */
-    public function agent()
-    {
-        return $this->belongsTo(User::class, 'agent_id');
-    }
 
     /**
      * Get the creator

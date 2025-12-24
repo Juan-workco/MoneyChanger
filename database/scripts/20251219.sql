@@ -99,7 +99,6 @@ CREATE TABLE `transactions` (
   `payment_method` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('pending','accept','sent','cancel') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `transaction_date` datetime NOT NULL,
-  `agent_id` int unsigned DEFAULT NULL,
   `agent_commission` decimal(10,2) NOT NULL DEFAULT '0.00',
   `profit_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `notes` text COLLATE utf8mb4_unicode_ci,
@@ -113,7 +112,6 @@ CREATE TABLE `transactions` (
   KEY `transactions_currency_from_id_foreign` (`currency_from_id`),
   KEY `transactions_currency_to_id_foreign` (`currency_to_id`),
   KEY `transactions_exchange_rate_id_foreign` (`exchange_rate_id`),
-  KEY `transactions_agent_id_foreign` (`agent_id`),
   KEY `transactions_created_by_foreign` (`created_by`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

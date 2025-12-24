@@ -106,11 +106,11 @@
                     Agent Details
                 </div>
                 <div class="card-body">
-                    @if($transaction->agent)
-                        <p class="mb-1"><strong>Name:</strong> {{ $transaction->agent->name }}</p>
-                        <p class="mb-1"><strong>Email:</strong> {{ $transaction->agent->email }}</p>
+                    @if($transaction->creator)
+                        <p class="mb-1"><strong>Name:</strong> {{ $transaction->creator->name }}</p>
+                        <p class="mb-1"><strong>Email:</strong> {{ $transaction->creator->email }}</p>
                     @else
-                        <p class="text-muted">No agent assigned.</p>
+                        <p class="text-muted">Directly entered (Admin).</p>
                     @endif
                 </div>
             </div>

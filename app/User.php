@@ -101,7 +101,7 @@ class User extends Authenticatable
      */
     public function transactions()
     {
-        return $this->hasMany(Transaction::class, 'agent_id');
+        return $this->hasMany(Transaction::class, 'created_by');
     }
 
     // --- Permission Helpers ---

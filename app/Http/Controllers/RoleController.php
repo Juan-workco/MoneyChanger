@@ -52,7 +52,7 @@ class RoleController extends Controller
     {
         $request->validate([
             'name' => 'required|unique:roles',
-            'slug' => 'required|unique:roles',
+            'slug' => 'required|unique:roles|in:super-admin,admin,agent',
         ]);
 
         $role = Role::create($request->only('name', 'slug', 'description'));
@@ -102,7 +102,7 @@ class RoleController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:roles,slug,' . $id,
+            'slug' => 'required|string|max:255|in:super-admin,admin,agent|unique:roles,slug,' . $id,
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
         ]);

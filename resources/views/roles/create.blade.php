@@ -25,9 +25,13 @@
 
                         <div class="form-group">
                             <label for="slug">Slug <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control {{ $errors->has('slug') ? 'is-invalid' : '' }}" 
-                                id="slug" name="slug" value="{{ old('slug') }}" required>
-                            <small class="form-text text-muted">Unique identifier (e.g., senior-agent)</small>
+                            <select class="form-control {{ $errors->has('slug') ? 'is-invalid' : '' }}" id="slug" name="slug" required>
+                                <option value="">Select a slug...</option>
+                                <option value="super-admin" {{ old('slug') == 'super-admin' ? 'selected' : '' }}>Super Admin (super-admin)</option>
+                                <option value="admin" {{ old('slug') == 'admin' ? 'selected' : '' }}>Admin (admin)</option>
+                                <option value="agent" {{ old('slug') == 'agent' ? 'selected' : '' }}>Agent (agent)</option>
+                            </select>
+                            <small class="form-text text-muted">A fixed identifier for system access control.</small>
                             @if ($errors->has('slug'))
                                 <div class="invalid-feedback">{{ $errors->first('slug') }}</div>
                             @endif
