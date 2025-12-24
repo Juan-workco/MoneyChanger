@@ -11,6 +11,8 @@ use App\Services\CommissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\ActivityLogService;
+use Log;
 
 class TransactionController extends Controller
 {
@@ -27,6 +29,12 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         $query = Transaction::with(['customer', 'currencyFrom', 'currencyTo', 'agent']);
+
+        // Filter by agent if user is an agent
+        $user = Auth::user();
+        if ($user->isAgent()) {
+            $query->where('created_by', $user->id);
+        }
 
         // Filter by status
         if ($request->has('status') && $request->status) {
@@ -63,9 +71,25 @@ class TransactionController extends Controller
      */
     public function create()
     {
-        $customers = Customer::active()->orderBy('name')->get();
-        $currencies = Currency::active()->orderBy('code')->get();
-        $defaultCurrency = \App\SystemSetting::get('default_currency', 'USD');
+        $customers = Customer::active()
+            ->when(Auth::user()->isAgent(), function ($query) {
+                $query->where('agent_id', Auth::user()->id);
+            })
+            ->orderBy('name')
+            ->get();
+
+
+        $defaultCurrencyCode = \App\SystemSetting::get('default_currency', 'MYR');
+        $defaultCurrency = Currency::where('code', $defaultCurrencyCode)->first();
+
+        // Only show currencies that have an active exchange rate with the default currency
+        $toCurrencyIds = ExchangeRate::where('is_active', true)
+            ->pluck('currency_to_id');
+
+        $currencies = Currency::whereIn('id', $toCurrencyIds)
+            ->active()
+            ->orderBy('code')
+            ->get();
 
         return view('transactions.create', compact('customers', 'currencies', 'defaultCurrency'));
     }
@@ -110,12 +134,18 @@ class TransactionController extends Controller
                 'buy_rate' => $buyRate,
                 'sell_rate' => $sellRate,
                 'profit_amount' => $profit,
-                'agent_commission' => 0, // Will be calculated based on agent settings in Phase 2
+                'agent_id' => Auth::user()->role === 'agent' ? Auth::id() : null,
+                'agent_commission' => (Auth::user()->role === 'agent' && Auth::user()->commission_rate > 0)
+                    ? ($profit * (Auth::user()->commission_rate / 100))
+                    : 0,
                 'status' => 'pending',
                 'created_by' => Auth::id(),
             ]);
 
             $transaction = Transaction::create($transactionData);
+
+            // Log activity
+            ActivityLogService::log('transaction_created', "Created transaction {$transaction->transaction_code} for customer " . $transaction->customer->name, $transaction);
 
             DB::commit();
 
@@ -142,6 +172,11 @@ class TransactionController extends Controller
             'agent',
             'creator'
         ])->findOrFail($id);
+
+        // Check permission for agents
+        if (Auth::user()->isAgent() && $transaction->created_by !== Auth::id()) {
+            return redirect()->route('transactions.index')->with('error', 'You are not authorized to view this transaction.');
+        }
 
         return view('transactions.show', compact('transaction'));
     }
@@ -176,19 +211,28 @@ class TransactionController extends Controller
         // Recalculate amounts if amount changed
         if ($request->amount_from != $transaction->amount_from) {
             $validated['amount_to'] = $request->amount_from * $transaction->sell_rate;
-            $validated['profit_amount'] = $this->commissionService->calculateProfit(
+            $profit = $this->commissionService->calculateProfit(
                 $transaction->sell_rate,
                 $transaction->buy_rate,
                 $request->amount_from
             );
+            $validated['profit_amount'] = $profit;
+
+            // Recalculate commission if transaction belongs to an agent
+            if ($transaction->agent_id) {
+                $agent = $transaction->agent;
+                if ($agent && $agent->commission_rate > 0) {
+                    $validated['agent_commission'] = $profit * ($agent->commission_rate / 100);
+                } else {
+                    $validated['agent_commission'] = 0;
+                }
+            }
         }
 
         $transaction->update($validated);
 
-        // Update customer stats if status changed to sent
-        if ($validated['status'] === 'sent' && $transaction->status !== 'sent') {
-            $transaction->customer->updateTransactionStats();
-        }
+        // Log activity
+        ActivityLogService::log('transaction_updated', "Updated transaction {$transaction->transaction_code}", $transaction);
 
         return redirect()->route('transactions.show', $transaction->id)
             ->with('success', 'Transaction updated successfully');
@@ -217,7 +261,11 @@ class TransactionController extends Controller
             'status' => 'required|in:pending,accept,sent,cancel',
         ]);
 
+        $oldStatus = $transaction->status;
         $transaction->updateStatus($request->status);
+
+        // Log activity
+        ActivityLogService::log('transaction_status_updated', "Updated transaction {$transaction->transaction_code} status from $oldStatus to {$request->status}", $transaction);
 
         return redirect()->back()
             ->with('success', 'Transaction status updated successfully');

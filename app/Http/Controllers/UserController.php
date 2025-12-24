@@ -7,13 +7,14 @@ use App\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Services\ActivityLogService;
 
 class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\View\View
      */
     public function index()
     {
@@ -56,11 +57,11 @@ class UserController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\View\View
      */
     public function create()
     {
-        $roles = auth()->user()->allowedRoles();
+        $roles = auth()->user()->allowedRoles()->sortBy('name')->values();
         return view('users.create', compact('roles'));
     }
 
@@ -68,7 +69,7 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -79,7 +80,10 @@ class UserController extends Controller
             'password' => 'required|string|min:6|confirmed',
             'role_id' => 'required|exists:roles,id',
             'status' => 'required|in:active,inactive',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        $validated['commission_rate'] = $validated['commission_rate'] ?? 0;
 
         // Verify if the user is allowed to assign this role
         $allowedRoles = auth()->user()->allowedRoles();
@@ -93,7 +97,9 @@ class UserController extends Controller
         $role = Role::find($validated['role_id']);
         $validated['role'] = ($role->slug === 'agent') ? 'agent' : 'admin';
 
-        User::create($validated);
+        $user = User::create($validated);
+
+        ActivityLogService::log('user_created', "Created user {$user->username} ({$user->name})", $user);
 
         return redirect()->route('users.index')
             ->with('success', 'User created successfully.');
@@ -103,7 +109,7 @@ class UserController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
      */
     public function edit($id)
     {
@@ -113,7 +119,7 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'You are not authorized to edit this user.');
         }
 
-        $roles = auth()->user()->allowedRoles();
+        $roles = auth()->user()->allowedRoles()->sortBy('name')->values();
         return view('users.edit', compact('user', 'roles'));
     }
 
@@ -122,7 +128,7 @@ class UserController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
@@ -139,7 +145,10 @@ class UserController extends Controller
             'password' => 'nullable|string|min:6|confirmed',
             'role_id' => 'required|exists:roles,id',
             'status' => 'required|in:active,inactive',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        $validated['commission_rate'] = $validated['commission_rate'] ?? 0;
 
         // Verify role assignment permission
         $allowedRoles = auth()->user()->allowedRoles();
@@ -162,6 +171,8 @@ class UserController extends Controller
 
         $user->update($validated);
 
+        ActivityLogService::log('user_updated', "Updated user {$user->username} ({$user->name})", $user);
+
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');
     }
@@ -170,7 +181,7 @@ class UserController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {

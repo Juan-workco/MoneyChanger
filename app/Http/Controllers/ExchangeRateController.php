@@ -6,6 +6,7 @@ use App\ExchangeRate;
 use App\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogService;
 use Carbon\Carbon;
 
 class ExchangeRateController extends Controller
@@ -15,6 +16,10 @@ class ExchangeRateController extends Controller
      */
     public function index(Request $request)
     {
+        if (!auth()->user()->hasPermission('view_exchange_rates')) {
+            return redirect()->route('dashboard')->with('error', 'You do not have permission to view exchange rates.');
+        }
+
         $query = ExchangeRate::with(['currencyFrom', 'currencyTo', 'creator']);
 
         // Filter by active status
@@ -41,6 +46,10 @@ class ExchangeRateController extends Controller
      */
     public function create()
     {
+        if (!auth()->user()->hasPermission('manage_exchange_rates')) {
+            return redirect()->route('exchange-rates.index')->with('error', 'You do not have permission to manage exchange rates.');
+        }
+
         $currencies = Currency::active()->orderBy('code')->get();
         $defaultCurrency = \App\SystemSetting::get('default_currency', 'MYR');
 
@@ -52,6 +61,10 @@ class ExchangeRateController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->hasPermission('manage_exchange_rates')) {
+            return redirect()->route('exchange-rates.index')->with('error', 'You do not have permission to manage exchange rates.');
+        }
+
         $validated = $request->validate([
             'currency_from_id' => 'required|exists:currencies,id',
             'currency_to_id' => 'required|exists:currencies,id|different:currency_from_id',
@@ -64,7 +77,9 @@ class ExchangeRateController extends Controller
         $validated['created_by'] = Auth::id();
         $validated['is_active'] = $request->has('is_active') ? true : false;
 
-        ExchangeRate::create($validated);
+        $rate = ExchangeRate::create($validated);
+
+        ActivityLogService::log('exchange_rate_created', "Created exchange rate for {$rate->currencyFrom->code}/{$rate->currencyTo->code}", $rate);
 
         return redirect()->route('exchange-rates.index')
             ->with('success', 'Exchange rate created successfully');
@@ -75,6 +90,10 @@ class ExchangeRateController extends Controller
      */
     public function edit($id)
     {
+        if (!auth()->user()->hasPermission('manage_exchange_rates')) {
+            return redirect()->route('exchange-rates.index')->with('error', 'You do not have permission to edit exchange rates.');
+        }
+
         $exchangeRate = ExchangeRate::findOrFail($id);
         $currencies = Currency::active()->orderBy('code')->get();
         return view('exchange-rates.edit', compact('exchangeRate', 'currencies'));
@@ -85,6 +104,10 @@ class ExchangeRateController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->hasPermission('manage_exchange_rates')) {
+            return redirect()->route('exchange-rates.index')->with('error', 'You do not have permission to edit exchange rates.');
+        }
+
         $rate = ExchangeRate::findOrFail($id);
 
         $validated = $request->validate([
@@ -99,6 +122,8 @@ class ExchangeRateController extends Controller
 
         $rate->update($validated);
 
+        ActivityLogService::log('exchange_rate_updated', "Updated exchange rate for {$rate->currencyFrom->code}/{$rate->currencyTo->code}", $rate);
+
         return redirect()->route('exchange-rates.index')
             ->with('success', 'Exchange rate updated successfully');
     }
@@ -108,6 +133,10 @@ class ExchangeRateController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->hasPermission('manage_exchange_rates')) {
+            return redirect()->route('exchange-rates.index')->with('error', 'You do not have permission to delete exchange rates.');
+        }
+
         $rate = ExchangeRate::findOrFail($id);
 
         // Check if rate is used in transactions
@@ -116,7 +145,10 @@ class ExchangeRateController extends Controller
                 ->with('error', 'Cannot delete exchange rate that is used in transactions');
         }
 
+        $pair = $rate->currencyFrom->code . '/' . $rate->currencyTo->code;
         $rate->delete();
+
+        ActivityLogService::log('exchange_rate_deleted', "Deleted exchange rate for $pair");
 
         return redirect()->route('exchange-rates.index')
             ->with('success', 'Exchange rate deleted successfully');

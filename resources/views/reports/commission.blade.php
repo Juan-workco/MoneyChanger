@@ -12,7 +12,7 @@
             <form action="{{ route('reports.commission') }}" method="GET" class="form-inline">
                 <div class="form-group mr-3">
                     <label for="month" class="mr-2">Month</label>
-                    <input type="month" class="form-control" name="month"
+                    <input type="text" class="form-control" name="month" id="month-picker"
                         value="{{ request('month', now()->format('Y-m')) }}">
                 </div>
                 <div class="form-group mr-3">
@@ -21,7 +21,8 @@
                         <option value="">All Agents</option>
                         @foreach($agents as $agent)
                             <option value="{{ $agent->id }}" {{ request('agent_id') == $agent->id ? 'selected' : '' }}>
-                                {{ $agent->name }}</option>
+                                {{ $agent->name }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -68,4 +69,21 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        $(document).ready(function () {
+            flatpickr("#month-picker", {
+                plugins: [
+                    new monthSelectPlugin({
+                        shorthand: true, //defaults to false
+                        dateFormat: "Y-m", //defaults to "F Y"
+                        altFormat: "F Y", //defaults to "F Y"
+                        theme: "light" // defaults to "light"
+                    })
+                ]
+            });
+        });
+    </script>
 @endsection

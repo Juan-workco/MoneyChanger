@@ -153,4 +153,34 @@ class Transaction extends Model
             $this->customer->updateTransactionStats();
         }
     }
+
+    /**
+     * Get transaction type (Buy/Sell)
+     */
+    public function getTypeAttribute()
+    {
+        $defaultCurrency = SystemSetting::get('default_currency', 'MYR');
+
+        // If we are giving default currency (MYR), we are Buying foreign currency? 
+        // No, if Customer gives Foreign (currency_from) and gets Local (currency_to), we are BUYING Foreign.
+        // If Customer gives Local (currency_from) and gets Foreign (currency_to), we are SELLING Foreign.
+
+        if ($this->currencyTo && $this->currencyTo->code === $defaultCurrency) {
+            return 'buy';
+        }
+
+        return 'sell';
+    }
+
+    /**
+     * Get applicable rate
+     */
+    public function getRateAttribute()
+    {
+        // If type is buy, show buy rate? Or always show the rate used for conversion?
+        // In store(), amount_to = amount_from * sell_rate. 
+        // This implies sell_rate is ALWAYS used for conversion in the current logic.
+        // So let's return sell_rate for now to match the calculation.
+        return $this->sell_rate;
+    }
 }

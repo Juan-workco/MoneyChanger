@@ -18,6 +18,12 @@ class CustomerController extends Controller
     {
         $query = Customer::with('agent');
 
+        // Filter by agent if user is an agent
+        $user = Auth::user();
+        if ($user->isAgent()) {
+            $query->where('agent_id', $user->id);
+        }
+
         // Search by name, email, phone, or ID number
         if ($request->has('search')) {
             $search = $request->search;
@@ -157,7 +163,7 @@ class CustomerController extends Controller
             ->orderBy('transaction_date', 'desc')
             ->paginate(20);
 
-            log::debug($transactions);
+        log::debug($transactions);
 
         return view('customers.transactions', compact('customer', 'transactions'));
     }

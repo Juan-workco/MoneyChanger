@@ -34,22 +34,29 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Permissions</label>
-                            <div class="row">
-                                @foreach($permissions as $permission)
-                                    <div class="col-md-6">
-                                        <div class="custom-control custom-checkbox">
-                                            <input type="checkbox" class="custom-control-input" 
-                                                id="perm_{{ $permission->id }}" name="permissions[]" 
-                                                value="{{ $permission->id }}"
-                                                {{ is_array(old('permissions')) && in_array($permission->id, old('permissions')) ? 'checked' : '' }}>
-                                            <label class="custom-control-label" for="perm_{{ $permission->id }}">
-                                                {{ $permission->name }}
-                                            </label>
-                                        </div>
+                            <label class="font-weight-bold">Permissions</label>
+                            <hr class="mt-0">
+                            @foreach($permissions as $module => $items)
+                                <div class="mb-4">
+                                    <h6 class="text-primary font-weight-bold"><i class="fas fa-folder-open mr-2"></i>{{ $module }}</h6>
+                                    <div class="row pl-3">
+                                        @foreach($items as $permission)
+                                            <div class="col-md-4 mb-2">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" 
+                                                        id="perm_{{ $permission->id }}" name="permissions[]" 
+                                                        value="{{ $permission->id }}"
+                                                        {{ is_array(old('permissions')) && in_array($permission->id, old('permissions')) ? 'checked' : '' }}>
+                                                    <label class="custom-control-label" for="perm_{{ $permission->id }}">
+                                                        {{ str_replace($module, '', $permission->name) ?: $permission->name }}
+                                                        <small class="text-muted d-block">{{ $permission->description }}</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endforeach
-                            </div>
+                                </div>
+                            @endforeach
                         </div>
 
                         <div class="mt-4">

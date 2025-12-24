@@ -14,11 +14,16 @@ class ReportService
      * @param string $date
      * @return array
      */
-    public function dailyReport($date)
+    public function dailyReport($date, $agentId = null)
     {
-        $transactions = Transaction::whereDate('transaction_date', $date)
-            ->with(['customer', 'currencyFrom', 'currencyTo'])
-            ->get();
+        $query = Transaction::whereDate('transaction_date', $date)
+            ->with(['customer', 'currencyFrom', 'currencyTo']);
+
+        if ($agentId) {
+            $query->where('created_by', $agentId);
+        }
+
+        $transactions = $query->get();
 
         $data = [
             'date' => $date,
@@ -42,33 +47,64 @@ class ReportService
      * @param string $currency
      * @return array
      */
-    public function balanceSheet($date, $currency = 'MYR')
+    public function balanceSheet($date, $currency = 'MYR', $agentId = null)
     {
         $startOfDay = Carbon::parse($date)->startOfDay();
         $endOfDay = Carbon::parse($date)->endOfDay();
 
         // Opening balance (all sent transactions before this date)
-        $openingBalance = Transaction::where('status', 'sent')
+        // Income (In)
+        $openingIncomeQuery = Transaction::where('status', 'sent')
             ->where('transaction_date', '<', $startOfDay)
             ->whereHas('currencyTo', function ($q) use ($currency) {
                 $q->where('code', $currency);
-            })
-            ->sum('amount_to');
+            });
+
+        if ($agentId) {
+            $openingIncomeQuery->where('created_by', $agentId);
+        }
+
+        $openingIncome = $openingIncomeQuery->sum('amount_to');
+
+        // Expenses (Out)
+        $openingExpenseQuery = Transaction::where('status', 'sent')
+            ->where('transaction_date', '<', $startOfDay)
+            ->whereHas('currencyFrom', function ($q) use ($currency) {
+                $q->where('code', $currency);
+            });
+
+        if ($agentId) {
+            $openingExpenseQuery->where('created_by', $agentId);
+        }
+
+        $openingExpense = $openingExpenseQuery->sum('amount_from');
+
+        $openingBalance = $openingIncome - $openingExpense;
 
         // Today's transactions
-        $todayIncome = Transaction::where('status', 'sent')
+        $incomeQuery = Transaction::where('status', 'sent')
             ->whereBetween('transaction_date', [$startOfDay, $endOfDay])
             ->whereHas('currencyTo', function ($q) use ($currency) {
                 $q->where('code', $currency);
-            })
-            ->sum('amount_to');
+            });
 
-        $todayExpense = Transaction::where('status', 'sent')
+        if ($agentId) {
+            $incomeQuery->where('created_by', $agentId);
+        }
+
+        $todayIncome = $incomeQuery->sum('amount_to');
+
+        $expenseQuery = Transaction::where('status', 'sent')
             ->whereBetween('transaction_date', [$startOfDay, $endOfDay])
             ->whereHas('currencyFrom', function ($q) use ($currency) {
                 $q->where('code', $currency);
-            })
-            ->sum('amount_from');
+            });
+
+        if ($agentId) {
+            $expenseQuery->where('created_by', $agentId);
+        }
+
+        $todayExpense = $expenseQuery->sum('amount_from');
 
         $closingBalance = $openingBalance + $todayIncome - $todayExpense;
 
@@ -89,12 +125,17 @@ class ReportService
      * @param string $endDate
      * @return array
      */
-    public function profitLoss($startDate, $endDate)
+    public function profitLoss($startDate, $endDate, $agentId = null)
     {
-        $transactions = Transaction::whereBetween('transaction_date', [$startDate, $endDate])
+        $query = Transaction::whereBetween('transaction_date', [$startDate, $endDate])
             ->where('status', 'sent')
-            ->with(['currencyFrom', 'currencyTo'])
-            ->get();
+            ->with(['currencyFrom', 'currencyTo']);
+
+        if ($agentId) {
+            $query->where('created_by', $agentId);
+        }
+
+        $transactions = $query->get();
 
         $totalProfit = $transactions->sum('profit_amount');
         $totalCommission = $transactions->sum('agent_commission');

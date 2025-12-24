@@ -6,6 +6,7 @@ use App\Transaction;
 use App\Customer;
 use App\Currency;
 use App\ExchangeRate;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -16,76 +17,19 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // TEMPORARY: Run Migration and Seeder Logic
-        try {
-            if (!Schema::hasTable('roles')) {
-                Schema::create('roles', function ($table) {
-                    $table->increments('id');
-                    $table->string('name');
-                    $table->string('slug')->unique();
-                    $table->text('description')->nullable();
-                    $table->timestamps();
-                });
-            }
-
-            if (!Schema::hasTable('permissions')) {
-                Schema::create('permissions', function ($table) {
-                    $table->increments('id');
-                    $table->string('name');
-                    $table->string('slug')->unique();
-                    $table->text('description')->nullable();
-                    $table->timestamps();
-                });
-            }
-
-            if (!Schema::hasTable('permission_role')) {
-                Schema::create('permission_role', function ($table) {
-                    $table->unsignedInteger('permission_id');
-                    $table->unsignedInteger('role_id');
-                    $table->primary(['permission_id', 'role_id']);
-                });
-            }
-
-            if (Schema::hasTable('users') && !Schema::hasColumn('users', 'role_id')) {
-                Schema::table('users', function ($table) {
-                    $table->unsignedInteger('role_id')->nullable()->after('id');
-                });
-            }
-
-            // Seed Data
-            if (\App\Role::count() == 0) {
-                $superAdmin = \App\Role::create(['name' => 'Super Admin', 'slug' => 'super-admin']);
-                $agent = \App\Role::create(['name' => 'Agent', 'slug' => 'agent']);
-
-                $perms = [
-                    ['name' => 'View Reports', 'slug' => 'view_reports'],
-                    ['name' => 'Manage Settings', 'slug' => 'manage_settings'],
-                    ['name' => 'Manage Roles', 'slug' => 'manage_roles'],
-                ];
-
-                foreach ($perms as $p) {
-                    $perm = \App\Permission::create($p);
-                    $superAdmin->permissions()->attach($perm);
-                }
-
-                // Assign Super Admin to first user
-                $user = \App\User::first();
-                if ($user) {
-                    $user->role_id = $superAdmin->id;
-                    $user->save();
-                }
-            }
-        } catch (\Exception $e) {
-            \Log::error("Migration Error: " . $e->getMessage());
-        }
-        // END TEMPORARY
+        $user = auth()->user();
+        $isAgent = $user->isAgent();
 
         // Summary statistics
         $stats = [
-            'total_transactions' => Transaction::count(),
-            'today_transactions' => Transaction::whereDate('transaction_date', today())->count(),
-            'pending_transactions' => Transaction::where('status', 'pending')->count(),
-            'total_customers' => Customer::count(),
+            'total_transactions' => $isAgent ? Transaction::where('created_by', $user->id)->count() : Transaction::count(),
+            'today_transactions' => $isAgent
+                ? Transaction::where('created_by', $user->id)->whereDate('transaction_date', today())->count()
+                : Transaction::whereDate('transaction_date', today())->count(),
+            'pending_transactions' => $isAgent
+                ? Transaction::where('created_by', $user->id)->where('status', 'pending')->count()
+                : Transaction::where('status', 'pending')->count(),
+            'total_customers' => $isAgent ? Customer::where('agent_id', $user->id)->count() : Customer::count(),
             'active_currencies' => Currency::where('is_active', true)->count(),
             'active_exchange_rates' => ExchangeRate::where('is_active', true)->count(),
         ];
@@ -93,33 +37,51 @@ class DashboardController extends Controller
         // Today's profit
         $todayProfit = Transaction::whereDate('transaction_date', today())
             ->where('status', 'sent')
+            ->when($isAgent, function ($q) use ($user) {
+                return $q->where('created_by', $user->id);
+            })
             ->sum('profit_amount');
 
         // This month's profit
         $monthProfit = Transaction::whereYear('transaction_date', date('Y'))
             ->whereMonth('transaction_date', date('m'))
             ->where('status', 'sent')
+            ->when($isAgent, function ($q) use ($user) {
+                return $q->where('created_by', $user->id);
+            })
             ->sum('profit_amount');
 
         // Recent transactions
         $recentTransactions = Transaction::with(['customer', 'currencyFrom', 'currencyTo'])
+            ->when($isAgent, function ($q) use ($user) {
+                return $q->where('created_by', $user->id);
+            })
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
 
         // Transaction status breakdown
         $transactionsByStatus = Transaction::select('status', DB::raw('count(*) as count'))
+            ->when($isAgent, function ($q) use ($user) {
+                return $q->where('created_by', $user->id);
+            })
             ->groupBy('status')
             ->get()
             ->pluck('count', 'status')
             ->toArray();
+
+        $activeRates = ExchangeRate::with(['currencyFrom', 'currencyTo'])
+            ->where('is_active', true)
+            ->orderBy('effective_date', 'desc')
+            ->get();
 
         return view('dashboard', compact(
             'stats',
             'todayProfit',
             'monthProfit',
             'recentTransactions',
-            'transactionsByStatus'
+            'transactionsByStatus',
+            'activeRates'
         ));
     }
 }

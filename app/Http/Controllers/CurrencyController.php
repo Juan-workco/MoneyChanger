@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogService;
 
 class CurrencyController extends Controller
 {
@@ -13,6 +14,10 @@ class CurrencyController extends Controller
      */
     public function index(Request $request)
     {
+        if (!auth()->user()->hasPermission('view_currencies')) {
+            return redirect()->route('dashboard')->with('error', 'You do not have permission to view currencies.');
+        }
+
         $query = Currency::with('creator');
 
         // Filter by status
@@ -43,6 +48,10 @@ class CurrencyController extends Controller
      */
     public function create()
     {
+        if (!auth()->user()->hasPermission('manage_currencies')) {
+            return redirect()->route('currencies.index')->with('error', 'You do not have permission to manage currencies.');
+        }
+
         return view('currencies.create');
     }
 
@@ -51,8 +60,12 @@ class CurrencyController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->hasPermission('manage_currencies')) {
+            return redirect()->route('currencies.index')->with('error', 'You do not have permission to manage currencies.');
+        }
+
         $validated = $request->validate([
-            'code' => 'required|string|max:1|unique:currencies,code',
+            'code' => 'required|string|size:3|unique:currencies,code',
             'name' => 'required|string|max:100',
             'symbol' => 'required|string|max:10',
             'is_active' => 'boolean',
@@ -61,7 +74,9 @@ class CurrencyController extends Controller
         $validated['created_by'] = Auth::id();
         $validated['is_active'] = $request->has('is_active') ? true : false;
 
-        Currency::create($validated);
+        $currency = Currency::create($validated);
+
+        ActivityLogService::log('currency_created', "Created currency {$currency->code} - {$currency->name}", $currency);
 
         return redirect()->route('currencies.index')
             ->with('success', 'Currency created successfully');
@@ -72,6 +87,10 @@ class CurrencyController extends Controller
      */
     public function edit($id)
     {
+        if (!auth()->user()->hasPermission('manage_currencies')) {
+            return redirect()->route('currencies.index')->with('error', 'You do not have permission to manage currencies.');
+        }
+
         $currency = Currency::findOrFail($id);
         return view('currencies.edit', compact('currency'));
     }
@@ -81,6 +100,10 @@ class CurrencyController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->hasPermission('manage_currencies')) {
+            return redirect()->route('currencies.index')->with('error', 'You do not have permission to manage currencies.');
+        }
+
         $currency = Currency::findOrFail($id);
 
         $validated = $request->validate([
@@ -94,6 +117,8 @@ class CurrencyController extends Controller
 
         $currency->update($validated);
 
+        ActivityLogService::log('currency_updated', "Updated currency {$currency->code}", $currency);
+
         return redirect()->route('currencies.index')
             ->with('success', 'Currency updated successfully');
     }
@@ -103,6 +128,10 @@ class CurrencyController extends Controller
      */
     public function destroy($id)
     {
+        if (!auth()->user()->hasPermission('manage_currencies')) {
+            return redirect()->route('currencies.index')->with('error', 'You do not have permission to delete currencies.');
+        }
+
         $currency = Currency::findOrFail($id);
 
         // Check if currency is used in exchange rates or transactions
@@ -111,7 +140,10 @@ class CurrencyController extends Controller
                 ->with('error', 'Cannot delete currency that is used in exchange rates');
         }
 
+        $code = $currency->code;
         $currency->delete();
+
+        ActivityLogService::log('currency_deleted', "Deleted currency $code");
 
         return redirect()->route('currencies.index')
             ->with('success', 'Currency deleted successfully');
@@ -122,8 +154,14 @@ class CurrencyController extends Controller
      */
     public function activate($id)
     {
+        if (!auth()->user()->hasPermission('manage_currencies')) {
+            return redirect()->route('currencies.index')->with('error', 'You do not have permission to manage currencies.');
+        }
+
         $currency = Currency::findOrFail($id);
         $currency->update(['is_active' => true]);
+
+        ActivityLogService::log('currency_activated', "Activated currency {$currency->code}", $currency);
 
         return redirect()->route('currencies.index')
             ->with('success', 'Currency activated successfully');
@@ -134,8 +172,14 @@ class CurrencyController extends Controller
      */
     public function deactivate($id)
     {
+        if (!auth()->user()->hasPermission('manage_currencies')) {
+            return redirect()->route('currencies.index')->with('error', 'You do not have permission to manage currencies.');
+        }
+
         $currency = Currency::findOrFail($id);
         $currency->update(['is_active' => false]);
+
+        ActivityLogService::log('currency_deactivated', "Deactivated currency {$currency->code}", $currency);
 
         return redirect()->route('currencies.index')
             ->with('success', 'Currency deactivated successfully');

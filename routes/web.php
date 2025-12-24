@@ -71,6 +71,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('settings/accounts/{id}', 'SettingsController@deleteAccount')->name('settings.delete-account');
         Route::get('settings/payment-methods', 'SettingsController@paymentMethods')->name('settings.payment-methods');
         Route::post('settings/payment-methods', 'SettingsController@updatePaymentMethods')->name('settings.update-payment-methods');
+
     });
 
 });

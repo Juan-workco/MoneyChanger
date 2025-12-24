@@ -100,9 +100,11 @@
         </div>
     </div>
 
+
+
     <!-- Recent Transactions -->
     <div class="row mt-4">
-        <div class="col-md-12">
+        <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
@@ -173,6 +175,42 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Rates</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Pair</th>
+                                    <th>Sell</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($activeRates as $rate)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ $rate->currencyFrom->code }}/{{ $rate->currencyTo->code }}</strong>
+                                        </td>
+                                        <td>{{ number_format($rate->sell_rate, 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center py-3 text-muted">No active rates</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
     </div>
 
     <!-- Quick Actions -->
@@ -184,25 +222,19 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3 text-center mb-3">
+                        <div class="col-md-4 text-center mb-3">
                             <a href="{{ route('transactions.create') }}" class="btn btn-primary btn-block text-white">
                                 <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
                                 New Transaction
                             </a>
                         </div>
-                        <div class="col-md-3 text-center mb-3">
+                        <div class="col-md-4 text-center mb-3">
                             <a href="{{ route('customers.create') }}" class="btn btn-success btn-block text-white">
                                 <i class="fas fa-user-plus fa-2x mb-2"></i><br>
                                 Add Customer
                             </a>
                         </div>
-                        <div class="col-md-3 text-center mb-3">
-                            <a href="{{ route('exchange-rates.create') }}" class="btn btn-info btn-block text-white">
-                                <i class="fas fa-chart-line fa-2x mb-2"></i><br>
-                                Add Exchange Rate
-                            </a>
-                        </div>
-                        <div class="col-md-3 text-center mb-3">
+                        <div class="col-md-4 text-center mb-3">
                             <a href="{{ route('reports.daily') }}" class="btn btn-warning btn-block text-white">
                                 <i class="fas fa-file-alt fa-2x mb-2"></i><br>
                                 View Reports

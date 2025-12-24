@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
+use App\Services\ActivityLogService;
 
 class LoginController extends Controller
 {
@@ -44,6 +46,14 @@ class LoginController extends Controller
 
     protected function credentials(Request $request)
     {
-        return ['username'=>$request->{$this->username()},'password'=>$request->password];
+        return ['username' => $request->{$this->username()}, 'password' => $request->password];
+    }
+
+    /**
+     * The user has been authenticated.
+     */
+    protected function authenticated(Request $request, $user)
+    {
+        ActivityLogService::log('login', "User {$user->username} logged in");
     }
 }

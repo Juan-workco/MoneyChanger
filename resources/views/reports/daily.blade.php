@@ -66,6 +66,7 @@
                             <th>Amount From</th>
                             <th>Rate</th>
                             <th>Amount To</th>
+                            <th>Status</th>
                             <th>Profit</th>
                         </tr>
                     </thead>
@@ -86,17 +87,18 @@
                                 </td>
                                 <td>{{ number_format($transaction->sell_rate, 2) }}</td>
                                 <td>{{ number_format($transaction->amount_to, 2) }} {{ $transaction->currencyTo->code }}</td>
+                                <td>{{ ucfirst($transaction->status) }}</td>
                                 <td class="text-right">{{ number_format($transaction->profit_amount, 2) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center">No transactions found for this date.</td>
+                                <td colspan="9" class="text-center">No transactions found for this date.</td>
                             </tr>
                         @endforelse
                     </tbody>
                     <tfoot>
                         <tr class="font-weight-bold">
-                            <td colspan="7" class="text-right">Total Profit:</td>
+                            <td colspan="8" class="text-right">Total Profit:</td>
                             <td class="text-right">{{ number_format($summary['total_profit'] ?? 0, 2) }}</td>
                         </tr>
                     </tfoot>

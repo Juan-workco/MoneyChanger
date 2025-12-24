@@ -35,13 +35,10 @@
                                 <div class="form-row">
                                     <div class="form-group col-md-6">
                                         <label for="currency_from_display">From Currency (Base) <span class="text-danger">*</span></label>
-                                        @php
-                                            $defaultCurrencyObj = $currencies->firstWhere('code', $defaultCurrency);
-                                        @endphp
                                         <input type="text" class="form-control" id="currency_from_display" 
-                                            value="{{ $defaultCurrencyObj ? $defaultCurrencyObj->code . ' - ' . $defaultCurrencyObj->name : $defaultCurrency }}" 
+                                            value="{{ $defaultCurrency ? $defaultCurrency->code . ' - ' . $defaultCurrency->name : '' }}" 
                                             readonly style="background-color: #e9ecef;">
-                                        <input type="hidden" name="currency_from_id" id="currency_from_id" value="{{ $defaultCurrencyObj ? $defaultCurrencyObj->id : '' }}">
+                                        <input type="hidden" name="currency_from_id" id="currency_from_id" value="{{ $defaultCurrency ? $defaultCurrency->id : '' }}">
                                         <small class="form-text text-muted">Base currency from settings</small>
                                     </div>
 
@@ -142,7 +139,7 @@
                 var fromId = $('#currency_from_id').val();
                 var toId = $(this).val();
                 var toCode = $(this).find(':selected').data('code');
-                var fromCode = '{{ $defaultCurrency }}';
+                var fromCode = '{{ $defaultCurrency->code }}';
 
                 if (fromId && toId) {
                     $.ajax({

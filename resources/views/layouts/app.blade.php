@@ -12,6 +12,11 @@
     <link href="{{ asset('coreui/css/style.css') }}" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 
     <style>
         /* Custom overrides for CoreUI v1 */
@@ -97,56 +102,71 @@
             <nav class="sidebar-nav">
                 <ul class="nav">
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('dashboard') || request()->is('/') ? 'active' : '' }}" 
-                           href="{{ route('dashboard') }}">
+                        <a class="nav-link {{ request()->is('dashboard') || request()->is('/') ? 'active' : '' }}"
+                            href="{{ route('dashboard') }}">
                             <i class="nav-icon fas fa-tachometer-alt"></i> Dashboard
                         </a>
                     </li>
-                    
+
                     <li class="nav-title">Management</li>
-                    
+
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('currencies*') ? 'active' : '' }}" 
-                           href="{{ route('currencies.index') }}">
-                            <i class="nav-icon fas fa-coins"></i> Currencies
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('customers*') ? 'active' : '' }}" 
-                           href="{{ route('customers.index') }}">
+                        <a class="nav-link {{ request()->is('customers*') ? 'active' : '' }}"
+                            href="{{ route('customers.index') }}">
                             <i class="nav-icon fas fa-users"></i> Customers
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('exchange-rates*') ? 'active' : '' }}" 
-                           href="{{ route('exchange-rates.index') }}">
-                            <i class="nav-icon fas fa-chart-line"></i> Exchange Rates
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('transactions*') ? 'active' : '' }}" 
-                           href="{{ route('transactions.index') }}">
+                        <a class="nav-link {{ request()->is('transactions*') ? 'active' : '' }}"
+                            href="{{ route('transactions.index') }}">
                             <i class="nav-icon fas fa-receipt"></i> Transactions
                         </a>
                     </li>
 
-                    @if (Auth::user()->isAdmin())
-                        <li class="nav-title">Reports & Settings</li>
-                    @elseif (Auth::user()->isAgent())
-                        <li class="nav-title">Reports</li>
-                    @endif
-                    
+                    <li class="nav-title">Reports</li>
                     @if(Auth::user()->hasPermission('view_reports'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('reports/daily*') ? 'active' : '' }}"
+                                href="{{ route('reports.daily') }}">
+                                <i class="nav-icon fas fa-calendar-day"></i> Daily Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('reports/balance-sheet*') ? 'active' : '' }}"
+                                href="{{ route('reports.balance-sheet') }}">
+                                <i class="nav-icon fas fa-balance-scale"></i> Balance Sheet
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('reports/profit-loss*') ? 'active' : '' }}"
+                                href="{{ route('reports.profit-loss') }}">
+                                <i class="nav-icon fas fa-chart-line"></i> Profit & Loss
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('reports/commission*') ? 'active' : '' }}"
+                                href="{{ route('reports.commission') }}">
+                                <i class="nav-icon fas fa-percentage"></i> Commission Report
+                            </a>
+                        </li>
+                    @endif
+
+                    <li class="nav-title">Administration</li>
+
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('reports*') ? 'active' : '' }}" 
-                           href="{{ route('reports.daily') }}">
-                            <i class="nav-icon fas fa-file-alt"></i> Reports
+                        <a class="nav-link {{ request()->is('currencies*') ? 'active' : '' }}"
+                            href="{{ route('currencies.index') }}">
+                            <i class="nav-icon fas fa-coins"></i> Currencies
                         </a>
                     </li>
-                    @endif
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->is('exchange-rates*') ? 'active' : '' }}"
+                            href="{{ route('exchange-rates.index') }}">
+                            <i class="nav-icon fas fa-chart-line"></i> Exchange Rates
+                        </a>
+                    </li>
 
                     @if(Auth::user()->hasPermission('manage_users'))
                         <li class="nav-item">
@@ -158,19 +178,19 @@
                     @endif
 
                     @if(Auth::user()->hasPermission('manage_roles'))
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('roles*') ? 'active' : '' }}" 
-                           href="{{ route('roles.index') }}">
-                            <i class="nav-icon fas fa-user-shield"></i> Roles & Permissions
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" 
-                           href="{{ route('settings.index') }}">
-                            <i class="nav-icon fas fa-cog"></i> Settings
-                        </a>
-                    </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('roles*') ? 'active' : '' }}"
+                                href="{{ route('roles.index') }}">
+                                <i class="nav-icon fas fa-user-shield"></i> Roles & Permissions
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}"
+                                href="{{ route('settings.index') }}">
+                                <i class="nav-icon fas fa-cog"></i> Settings
+                            </a>
+                        </li>
                     @endif
                 </ul>
             </nav>
@@ -230,6 +250,8 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Flatpickr -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="{{ asset('coreui/js/app.js') }}"></script>
 
     <script>

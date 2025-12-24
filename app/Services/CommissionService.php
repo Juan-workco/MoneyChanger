@@ -61,16 +61,21 @@ class CommissionService
      * @param string $month (Y-m format)
      * @return array
      */
-    public function getMonthlyCommissionReport($month)
+    public function getMonthlyCommissionReport($month, $agentId = null)
     {
         $startDate = date('Y-m-01', strtotime($month));
         $endDate = date('Y-m-t', strtotime($month));
 
-        $transactions = Transaction::with('agent')
+        $query = Transaction::with('agent')
             ->whereNotNull('agent_id')
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->where('status', 'sent')
-            ->get();
+            ->where('status', 'sent');
+
+        if ($agentId) {
+            $query->where('agent_id', $agentId);
+        }
+
+        $transactions = $query->get();
 
         $report = [];
 
@@ -78,17 +83,18 @@ class CommissionService
             $agentId = $transaction->agent_id;
 
             if (!isset($report[$agentId])) {
-                $report[$agentId] = [
-                    'agent' => $transaction->agent,
-                    'total_transactions' => 0,
-                    'total_profit' => 0,
+                $report[$agentId] = (object) [
+                    'agent_name' => $transaction->agent->name ?? 'Unknown',
+                    'transaction_count' => 0,
+                    'total_volume' => 0,
                     'total_commission' => 0,
+                    'is_paid' => false,
                 ];
             }
 
-            $report[$agentId]['total_transactions']++;
-            $report[$agentId]['total_profit'] += $transaction->profit_amount;
-            $report[$agentId]['total_commission'] += $transaction->agent_commission;
+            $report[$agentId]->transaction_count++;
+            $report[$agentId]->total_volume += $transaction->amount_from;
+            $report[$agentId]->total_commission += $transaction->agent_commission;
         }
 
         return array_values($report);

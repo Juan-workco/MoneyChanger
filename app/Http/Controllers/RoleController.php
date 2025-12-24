@@ -22,33 +22,46 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $permissions = Permission::all();
+        $permissions = Permission::all()->groupBy(function ($permission) {
+            if (strpos($permission->slug, 'currencies') !== false)
+                return 'Currencies';
+            if (strpos($permission->slug, 'exchange_rates') !== false)
+                return 'Exchange Rates';
+            if (strpos($permission->slug, 'reports') !== false)
+                return 'Reports';
+            if (strpos($permission->slug, 'settings') !== false)
+                return 'Settings';
+            if (strpos($permission->slug, 'roles') !== false)
+                return 'Roles';
+            if (strpos($permission->slug, 'users') !== false)
+                return 'Users';
+            if (strpos($permission->slug, 'transactions') !== false)
+                return 'Transactions';
+            if (strpos($permission->slug, 'customers') !== false)
+                return 'Customers';
+            return 'Other';
+        });
+
         return view('roles.create', compact('permissions'));
     }
 
     /**
-     * Store a newly created role
+     * Store a newly created role in storage
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:roles',
-            'permissions' => 'array',
-            'permissions.*' => 'exists:permissions,id',
+        $request->validate([
+            'name' => 'required|unique:roles',
+            'slug' => 'required|unique:roles',
         ]);
 
-        $role = Role::create([
-            'name' => $validated['name'],
-            'slug' => $validated['slug'],
-        ]);
+        $role = Role::create($request->only('name', 'slug', 'description'));
 
-        if (isset($validated['permissions'])) {
-            $role->permissions()->sync($validated['permissions']);
+        if ($request->has('permissions')) {
+            $role->permissions()->sync($request->permissions);
         }
 
-        return redirect()->route('roles.index')
-            ->with('success', 'Role created successfully');
+        return redirect()->route('roles.index')->with('success', 'Role created successfully');
     }
 
     /**
@@ -57,7 +70,26 @@ class RoleController extends Controller
     public function edit($id)
     {
         $role = Role::with('permissions')->findOrFail($id);
-        $permissions = Permission::all();
+        $permissions = Permission::all()->groupBy(function ($permission) {
+            if (strpos($permission->slug, 'currencies') !== false)
+                return 'Currencies';
+            if (strpos($permission->slug, 'exchange_rates') !== false)
+                return 'Exchange Rates';
+            if (strpos($permission->slug, 'reports') !== false)
+                return 'Reports';
+            if (strpos($permission->slug, 'settings') !== false)
+                return 'Settings';
+            if (strpos($permission->slug, 'roles') !== false)
+                return 'Roles';
+            if (strpos($permission->slug, 'users') !== false)
+                return 'Users';
+            if (strpos($permission->slug, 'transactions') !== false)
+                return 'Transactions';
+            if (strpos($permission->slug, 'customers') !== false)
+                return 'Customers';
+            return 'Other';
+        });
+
         return view('roles.edit', compact('role', 'permissions'));
     }
 

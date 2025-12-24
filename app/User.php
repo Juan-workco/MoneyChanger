@@ -23,7 +23,8 @@ class User extends Authenticatable
         'role', // Keeping old enum for backward compatibility or migration
         'role_id',
         'status',
-        'super_admin'
+        'super_admin',
+        'commission_rate'
     ];
 
     /**
@@ -48,6 +49,8 @@ class User extends Authenticatable
             return true;
         }
 
+        Log::debug($this->assignedRole->permissions);
+
         return $this->assignedRole->permissions->contains('slug', $permission);
     }
 
@@ -60,6 +63,14 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    /**
+     * Check if user is super admin
+     */
+    public function isSuperAdmin()
+    {
+        return $this->role === 'super-admin';
+    }
 
     /**
      * Check if user is admin

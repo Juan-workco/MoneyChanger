@@ -60,6 +60,16 @@
                             </div>
                         </div>
                         <div class="form-group row">
+                            <label class="col-md-3 col-form-label" for="commission_rate">Commission Rate (%)</label>
+                            <div class="col-md-9">
+                                <input type="number" id="commission_rate" name="commission_rate" class="form-control"
+                                    placeholder="Enter commission rate (e.g. 10.00)"
+                                    value="{{ old('commission_rate', $user->commission_rate) }}" step="0.01" min="0"
+                                    max="100">
+                                <small class="text-muted">Percentage of profit allocated to agent.</small>
+                            </div>
+                        </div>
+                        <div class="form-group row">
                             <label class="col-md-3 col-form-label" for="status">Status</label>
                             <div class="col-md-9">
                                 <select id="status" name="status" class="form-control" required>

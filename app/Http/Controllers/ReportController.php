@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\ReportService;
 use App\Services\CommissionService;
 use App\Currency;
+use App\User;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade as PDF;
 
@@ -25,7 +26,8 @@ class ReportController extends Controller
     public function dailyReport(Request $request)
     {
         $date = $request->get('date', date('Y-m-d'));
-        $report = $this->reportService->dailyReport($date);
+        $agentId = auth()->user()->isAgent() ? auth()->id() : null;
+        $report = $this->reportService->dailyReport($date, $agentId);
 
         // Structure data to match view expectations
         $transactions = $report['transactions'] ?? [];
@@ -44,12 +46,27 @@ class ReportController extends Controller
     public function balanceSheet(Request $request)
     {
         $date = $request->get('date', date('Y-m-d'));
-        $currency = $request->get('currency', 'MYR');
+        $agentId = auth()->user()->isAgent() ? auth()->id() : null;
 
-        $balance = $this->reportService->balanceSheet($date, $currency);
         $currencies = Currency::active()->get();
+        $balances = [];
+        $detailedBalances = [];
 
-        return view('reports.balance_sheet', compact('balance', 'date', 'currency', 'currencies'));
+        foreach ($currencies as $curr) {
+            $sheet = $this->reportService->balanceSheet($date, $curr->code, $agentId);
+
+            $balances[$curr->code] = $sheet['closing_balance'];
+
+            $detailedBalances[] = [
+                'currency' => $curr->code,
+                'opening' => $sheet['opening_balance'],
+                'in' => $sheet['today_income'],
+                'out' => $sheet['today_expense'],
+                'closing' => $sheet['closing_balance']
+            ];
+        }
+
+        return view('reports.balance_sheet', compact('balances', 'detailedBalances', 'date', 'currencies'));
     }
 
     /**
@@ -59,10 +76,22 @@ class ReportController extends Controller
     {
         $startDate = $request->get('start_date', date('Y-m-01'));
         $endDate = $request->get('end_date', date('Y-m-d'));
+        $agentId = auth()->user()->isAgent() ? auth()->id() : null;
 
-        $report = $this->reportService->profitLoss($startDate, $endDate);
+        $report = $this->reportService->profitLoss($startDate, $endDate, $agentId);
 
-        return view('reports.profit_loss', compact('report', 'startDate', 'endDate'));
+        $totalProfit = $report['total_profit'];
+        $totalTransactions = $report['total_transactions'];
+        $profitByPair = collect($report['by_currency_pair'])->map(function ($item) {
+            return [
+                'name' => $item['pair'],
+                'count' => $item['count'],
+                'volume' => 0, // Volume not calculated by service but needed by view
+                'profit' => $item['total_profit']
+            ];
+        });
+
+        return view('reports.profit_loss', compact('report', 'startDate', 'endDate', 'totalProfit', 'totalTransactions', 'profitByPair'));
     }
 
     /**
@@ -71,9 +100,17 @@ class ReportController extends Controller
     public function commissionReport(Request $request)
     {
         $month = $request->get('month', date('Y-m'));
-        $report = $this->commissionService->getMonthlyCommissionReport($month);
+        $agentId = $request->get('agent_id');
 
-        return view('reports.commission', compact('report', 'month'));
+        // If agent is logged in, they can only see their own commission
+        if (auth()->user()->isAgent()) {
+            $agentId = auth()->id();
+        }
+
+        $commissions = $this->commissionService->getMonthlyCommissionReport($month, $agentId);
+        $agents = User::where('role', 'agent')->get();
+
+        return view('reports.commission', compact('commissions', 'month', 'agents'));
     }
 
     /**
@@ -82,7 +119,8 @@ class ReportController extends Controller
     public function exportPDF(Request $request)
     {
         $date = $request->get('date', date('Y-m-d'));
-        $report = $this->reportService->dailyReport($date);
+        $agentId = auth()->user()->isAgent() ? auth()->id() : null;
+        $report = $this->reportService->dailyReport($date, $agentId);
 
         $pdf = PDF::loadView('reports.pdf.daily', compact('report', 'date'));
         return $pdf->download('daily-report-' . $date . '.pdf');
@@ -95,7 +133,8 @@ class ReportController extends Controller
     {
         $startDate = $request->get('start_date', date('Y-m-01'));
         $endDate = $request->get('end_date', date('Y-m-d'));
-        $report = $this->reportService->profitLoss($startDate, $endDate);
+        $agentId = auth()->user()->isAgent() ? auth()->id() : null;
+        $report = $this->reportService->profitLoss($startDate, $endDate, $agentId);
 
         $pdf = PDF::loadView('reports.pdf.profit_loss', compact('report', 'startDate', 'endDate'));
         return $pdf->download('profit-loss-' . $startDate . '-to-' . $endDate . '.pdf');
