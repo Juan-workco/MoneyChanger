@@ -152,21 +152,27 @@
                         </li>
                     @endif
 
+                    @if(Auth::user()->hasPermission('view_currencies') || Auth::user()->hasPermission('view_exchange_rates') || Auth::user()->hasPermission('manage_users') || Auth::user()->hasPermission('manage_roles'))
                     <li class="nav-title">Administration</li>
+                    @endif
 
+                    @if(Auth::user()->hasPermission('view_currencies'))
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is('currencies*') ? 'active' : '' }}"
                             href="{{ route('currencies.index') }}">
                             <i class="nav-icon fas fa-coins"></i> Currencies
                         </a>
                     </li>
+                    @endif
 
+                    @if(Auth::user()->hasPermission('view_exchange_rates'))
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is('exchange-rates*') ? 'active' : '' }}"
                             href="{{ route('exchange-rates.index') }}">
                             <i class="nav-icon fas fa-chart-line"></i> Exchange Rates
                         </a>
                     </li>
+                    @endif
 
                     @if(Auth::user()->hasPermission('manage_users'))
                         <li class="nav-item">
