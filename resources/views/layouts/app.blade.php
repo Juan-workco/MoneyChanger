@@ -128,6 +128,13 @@
                         </a>
                     </li>
 
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->is('cash-flows*') ? 'active' : '' }}"
+                            href="{{ route('cash-flows.index') }}">
+                            <i class="nav-icon fas fa-exchange-alt"></i> Cash Flows
+                        </a>
+                    </li>
+
                     <li class="nav-title">Reports</li>
                     @if(Auth::user()->hasPermission('view_reports'))
                         <li class="nav-item">

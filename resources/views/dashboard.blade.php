@@ -24,15 +24,15 @@
                             </a>
                         </div>
                         <div class="col-md-4 text-center mb-3">
-                            <a href="{{ route('customers.create') }}" class="btn btn-success btn-block text-white">
-                                <i class="fas fa-user-plus fa-2x mb-2"></i><br>
-                                Add Customer
+                            <a href="{{ route('cash-flows.create') }}" class="btn btn-info btn-block text-white">
+                                <i class="fas fa-exchange-alt fa-2x mb-2"></i><br>
+                                New Cash Flow (AP/AR/CTC)
                             </a>
                         </div>
                         <div class="col-md-4 text-center mb-3">
-                            <a href="{{ route('reports.daily') }}" class="btn btn-warning btn-block text-white">
-                                <i class="fas fa-file-alt fa-2x mb-2"></i><br>
-                                View Reports
+                            <a href="{{ route('customers.create') }}" class="btn btn-success btn-block text-white">
+                                <i class="fas fa-user-plus fa-2x mb-2"></i><br>
+                                Add Customer
                             </a>
                         </div>
                     </div>
