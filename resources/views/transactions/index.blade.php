@@ -79,7 +79,8 @@
                                     <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
                                 </th>
                             @endif
-                            <th>Date</th>
+                            <th>Created Date</th>
+                            <th>Txn Date</th>
                             <th>Code</th>
                             <th>Customer</th>
                             <th>From</th>
@@ -98,7 +99,13 @@
                                             data-status="{{ $transaction->status }}" onclick="updateBulkActions()">
                                     </td>
                                 @endif
-                                <td>{{ $transaction->transaction_date->format('Y-m-d H:i') }}</td>
+                                <td>{{ $transaction->created_at->setTimezone('+08:00')->format('Y-m-d H:i') }}</td>
+                                <td>
+                                    {{ $transaction->transaction_date->format('Y-m-d') }}
+                                    @if($transaction->is_backdated)
+                                        <span class="badge badge-danger" title="Backdated">BD</span>
+                                    @endif
+                                </td>
                                 <td>
                                     <a href="{{ route('transactions.show', $transaction->id) }}">
                                         <strong>{{ $transaction->transaction_code }}</strong>

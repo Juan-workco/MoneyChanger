@@ -134,7 +134,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_email_unique` (`email`),
   UNIQUE KEY `username_UNIQUE` (`username`),
   KEY `users_role_id_foreign` (`role_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `roles` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -216,4 +216,98 @@ CREATE TABLE `activity_logs` (
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Customer Module Enhancements (2026-01-12)
+-- Add group_name, contact_info, and upline fields
+ALTER TABLE `customers` 
+ADD COLUMN `group_name` VARCHAR(100) NULL AFTER `name`,
+ADD COLUMN `contact_info` VARCHAR(255) NULL AFTER `email`,
+ADD COLUMN `upline1_id` INT UNSIGNED NULL AFTER `agent_id`,
+ADD COLUMN `upline2_id` INT UNSIGNED NULL AFTER `upline1_id`,
+ADD CONSTRAINT `customers_upline1_foreign` FOREIGN KEY (`upline1_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+ADD CONSTRAINT `customers_upline2_foreign` FOREIGN KEY (`upline2_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+-- Commission Module Tables (2026-01-20)
+CREATE TABLE `currency_pairs` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `base_currency_id` INT UNSIGNED NOT NULL,
+    `target_currency_id` INT UNSIGNED NOT NULL,
+    `default_point` DECIMAL(10, 4) NOT NULL DEFAULT '0.0000',
+    `is_active` TINYINT(1) NOT NULL DEFAULT '1',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `currency_pairs_base_target_unique` (`base_currency_id`, `target_currency_id`),
+    CONSTRAINT `currency_pairs_base_currency_id_foreign` FOREIGN KEY (`base_currency_id`) REFERENCES `currencies` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `currency_pairs_target_currency_id_foreign` FOREIGN KEY (`target_currency_id`) REFERENCES `currencies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `customer_upline_commissions` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `customer_id` INT UNSIGNED NOT NULL,
+    `currency_pair_id` INT UNSIGNED NOT NULL,
+    `upline_level` ENUM('upline1', 'upline2') NOT NULL,
+    `point_value` DECIMAL(10, 4) NOT NULL DEFAULT '0.0000',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `cust_pair_upline_unique` (`customer_id`, `currency_pair_id`, `upline_level`),
+    CONSTRAINT `customer_upline_commissions_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `customer_upline_commissions_currency_pair_id_foreign` FOREIGN KEY (`currency_pair_id`) REFERENCES `currency_pairs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `transactions`
+ADD COLUMN `currency_pair_id` INT UNSIGNED NULL AFTER `customer_id`,
+ADD COLUMN `upline1_commission_amount` DECIMAL(15, 2) NOT NULL DEFAULT '0.00' AFTER `profit_amount`,
+ADD COLUMN `upline1_point` DECIMAL(10, 4) NULL AFTER `upline1_commission_amount`,
+ADD COLUMN `upline2_commission_amount` DECIMAL(15, 2) NOT NULL DEFAULT '0.00' AFTER `upline1_point`,
+ADD COLUMN `upline2_point` DECIMAL(10, 4) NULL AFTER `upline2_commission_amount`,
+ADD CONSTRAINT `transactions_currency_pair_id_foreign` FOREIGN KEY (`currency_pair_id`) REFERENCES `currency_pairs` (`id`) ON DELETE SET NULL;
+
+-- Sales Order & Monthly Rates (2026-02-08)
+CREATE TABLE `monthly_rates` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `currency_pair_id` INT UNSIGNED NOT NULL,
+  `month` VARCHAR(7) NOT NULL COMMENT 'YYYY-MM',
+  `rate` DECIMAL(15, 8) NOT NULL,
+  `created_by` INT UNSIGNED NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  UNIQUE KEY `monthly_rates_currency_pair_month_unique` (`currency_pair_id`, `month`),
+  CONSTRAINT `monthly_rates_currency_pair_id_foreign` FOREIGN KEY (`currency_pair_id`) REFERENCES `currency_pairs` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `monthly_rates_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `transactions`
+ADD COLUMN `is_backdated` TINYINT(1) NOT NULL DEFAULT 0 AFTER `transaction_code`,
+ADD COLUMN `monthly_rate` DECIMAL(15, 2) NULL AFTER `exchange_rate_id`,
+ADD COLUMN `service_fee` DECIMAL(15, 2) NOT NULL DEFAULT 0.00 AFTER `monthly_rate`;
+
+ALTER TABLE currency_pairs ADD COLUMN is_commission_enabled BOOLEAN DEFAULT TRUE;
+
+-- Cash Flow Module (2026-02-09)
+CREATE TABLE `cash_flows` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `cash_flow_code` VARCHAR(50) NOT NULL UNIQUE,
+  `type` ENUM('ap', 'ar', 'ctc') NOT NULL,
+  `customer_id` INT UNSIGNED NOT NULL COMMENT 'Primary party (AP: To, AR: From, CTC: From)',
+  `related_customer_id` INT UNSIGNED NULL COMMENT 'Secondary party (CTC: To)',
+  `from_account_id` INT UNSIGNED NULL COMMENT 'For AP: Our Account paying from',
+  `to_account_id` INT UNSIGNED NULL COMMENT 'For AR: Our Account receiving to',
+  `amount` DECIMAL(15, 2) NOT NULL,
+  `currency_id` INT UNSIGNED NOT NULL,
+  `transaction_date` DATETIME NOT NULL,
+  `is_backdated` TINYINT(1) NOT NULL DEFAULT 0,
+  `notes` TEXT NULL,
+  `status` ENUM('pending', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+  `created_by` INT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  CONSTRAINT `cash_flows_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`),
+  CONSTRAINT `cash_flows_related_customer_id_foreign` FOREIGN KEY (`related_customer_id`) REFERENCES `customers` (`id`),
+  CONSTRAINT `cash_flows_from_account_id_foreign` FOREIGN KEY (`from_account_id`) REFERENCES `receiving_accounts` (`id`),
+  CONSTRAINT `cash_flows_to_account_id_foreign` FOREIGN KEY (`to_account_id`) REFERENCES `receiving_accounts` (`id`),
+  CONSTRAINT `cash_flows_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
+  CONSTRAINT `cash_flows_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

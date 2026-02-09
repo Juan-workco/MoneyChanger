@@ -35,8 +35,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers/{id}/transactions', 'CustomerController@transactionHistory')->name('customers.transactions');
 
     // Exchange Rates
-    Route::get('exchange-rates/get-active', 'ExchangeRateController@getActiveRate')->name('exchange-rates.get-active');
+    Route::get('exchange-rates/get-active-rate', 'ExchangeRateController@getActiveRate')->name('exchange-rates.get-active-rate');
+    Route::get('exchange-rates/{pair}/history', 'ExchangeRateController@history')->name('exchange-rates.history');
+    Route::post('exchange-rates/monthly-rate', 'ExchangeRateController@storeMonthlyRate')->name('exchange-rates.store-monthly-rate');
     Route::resource('exchange-rates', 'ExchangeRateController');
+
+    // Currency Pairs
+    Route::resource('currency-pairs', 'CurrencyPairController')->except(['create', 'edit', 'update', 'show']);
+    Route::post('currency-pairs/{id}/toggle-commission', 'CurrencyPairController@toggleCommission')->name('currency-pairs.toggle-commission');
+
+    // Cash Flows (AP/AR/CTC)
+    Route::get('cash-flows/get-balance', 'CashFlowController@getBalance')->name('cash-flows.get-balance');
+    Route::resource('cash-flows', 'CashFlowController');
 
 
     // Transactions
@@ -69,6 +79,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('settings/accounts', 'SettingsController@storeAccount')->name('settings.store-account');
         Route::put('settings/accounts/{id}', 'SettingsController@updateAccount')->name('settings.update-account');
         Route::delete('settings/accounts/{id}', 'SettingsController@deleteAccount')->name('settings.delete-account');
+        Route::get('settings/payment-methods', 'SettingsController@paymentMethods')->name('settings.payment-methods');
+        Route::post('settings/payment-methods', 'SettingsController@updatePaymentMethods')->name('settings.update-payment-methods');
         Route::get('settings/payment-methods', 'SettingsController@paymentMethods')->name('settings.payment-methods');
         Route::post('settings/payment-methods', 'SettingsController@updatePaymentMethods')->name('settings.update-payment-methods');
 

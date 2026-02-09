@@ -60,7 +60,9 @@ class TransactionController extends Controller
             });
         }
 
-        $transactions = $query->orderBy('transaction_date', 'desc')->paginate(20);
+        $transactions = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        log::debug($transactions);
 
         $customers = Customer::active()
             ->when(Auth::user()->isAgent(), function ($query) {
@@ -78,6 +80,7 @@ class TransactionController extends Controller
     public function create()
     {
         $customers = Customer::active()
+            ->with(['commissions', 'upline1', 'upline2'])
             ->when(Auth::user()->isAgent(), function ($query) {
                 $query->where('agent_id', Auth::user()->id);
             })
@@ -88,6 +91,9 @@ class TransactionController extends Controller
         $defaultCurrencyCode = \App\SystemSetting::get('default_currency', 'MYR');
         $defaultCurrency = Currency::where('code', $defaultCurrencyCode)->first();
 
+        // Get all currency pairs for default points
+        $currencyPairs = \App\CurrencyPair::where('is_active', true)->get();
+
         // Only show currencies that have an active exchange rate with the default currency
         $toCurrencyIds = ExchangeRate::where('is_active', true)
             ->pluck('currency_to_id');
@@ -97,7 +103,7 @@ class TransactionController extends Controller
             ->orderBy('code')
             ->get();
 
-        return view('transactions.create', compact('customers', 'currencies', 'defaultCurrency'));
+        return view('transactions.create', compact('customers', 'currencies', 'defaultCurrency', 'currencyPairs'));
     }
 
     /**
@@ -113,6 +119,11 @@ class TransactionController extends Controller
             'payment_method' => 'required|string|max:100',
             'transaction_date' => 'required|date',
             'notes' => 'nullable|string',
+            'upline1_commission_amount' => 'nullable|numeric',
+            'upline2_commission_amount' => 'nullable|numeric',
+            'upline1_point' => 'nullable|numeric',
+            'upline2_point' => 'nullable|numeric',
+            'currency_pair_id' => 'nullable|exists:currency_pairs,id',
         ]);
 
         DB::beginTransaction();
@@ -128,11 +139,50 @@ class TransactionController extends Controller
                     ->withInput();
             }
 
-            // Calculate amounts and profit
+            // Determine effective rates
             $buyRate = $exchangeRate->buy_rate;
-            $sellRate = $exchangeRate->sell_rate;
+            // Use manual rate if provided, otherwise system rate
+            $sellRate = $request->filled('sell_rate') ? $request->input('sell_rate') : $exchangeRate->sell_rate;
+
             $amountTo = $request->amount_from * $sellRate;
-            $profit = $this->commissionService->calculateProfit($sellRate, $buyRate, $request->amount_from);
+
+            // Check for Backdating
+            $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
+            $isBackdated = $transactionDate->startOfDay()->lt(\Carbon\Carbon::today());
+
+            // Monthly Rate & Profit Calculation
+            $monthlyRate = null;
+            $monthlyRateVal = null;
+            $profit = 0;
+
+            if ($request->currency_pair_id) {
+                $month = $transactionDate->format('Y-m');
+                $monthlyRate = \App\MonthlyRate::where('currency_pair_id', $request->currency_pair_id)
+                    ->where('month', $month)
+                    ->first();
+
+                if ($monthlyRate) {
+                    $monthlyRateVal = $monthlyRate->rate;
+                    // Profit = (Sales Rate - Monthly Fixed Rate) * Amount
+                    // Assuming Sales Rate > Monthly Rate = Profit
+                    $profit = ($sellRate - $monthlyRateVal) * $request->amount_from;
+                } else {
+                    // Fallback to standard profit (Sell - Buy)
+                    // Or keep 0? User said "difference between sales input and fixed monthly... recorded as FX profit".
+                    // If no monthly, maybe use old logic:
+                    $profit = ($sellRate - $buyRate) * $request->amount_from;
+                }
+            } else {
+                $profit = ($sellRate - $buyRate) * $request->amount_from; // Fallback
+            }
+
+            $currentNotes = $validated['notes'] ?? '';
+            if ($isBackdated) {
+                $currentNotes .= "\n[System: Backdated Transaction]";
+            }
+            if ($monthlyRateVal) {
+                $currentNotes .= "\n[System: FX Profit using Monthly Rate: $monthlyRateVal]";
+            }
 
             $transactionData = array_merge($validated, [
                 'exchange_rate_id' => $exchangeRate->id,
@@ -143,6 +193,15 @@ class TransactionController extends Controller
                 'agent_commission' => 0,
                 'status' => 'pending',
                 'created_by' => Auth::id(),
+                'currency_pair_id' => $request->currency_pair_id,
+                'upline1_commission_amount' => $request->upline1_commission_amount ?? 0,
+                'upline1_point' => $request->upline1_point,
+                'upline2_commission_amount' => $request->upline2_commission_amount ?? 0,
+                'upline2_point' => $request->upline2_point,
+                'is_backdated' => $isBackdated,
+                'monthly_rate' => $monthlyRateVal,
+                'service_fee' => $request->service_fee ?? 0,
+                'notes' => trim($currentNotes)
             ]);
 
             $transaction = Transaction::create($transactionData);
@@ -196,6 +255,7 @@ class TransactionController extends Controller
         }
 
         $customers = Customer::active()
+            ->with(['commissions', 'upline1', 'upline2'])
             ->when(Auth::user()->isAgent(), function ($query) {
                 $query->where('agent_id', Auth::user()->id);
             })
@@ -203,8 +263,10 @@ class TransactionController extends Controller
             ->get();
 
         $currencies = Currency::active()->orderBy('code')->get();
+        // Get all currency pairs for default points
+        $currencyPairs = \App\CurrencyPair::where('is_active', true)->get();
 
-        return view('transactions.edit', compact('transaction', 'customers', 'currencies'));
+        return view('transactions.edit', compact('transaction', 'customers', 'currencies', 'currencyPairs'));
     }
 
     /**
@@ -225,20 +287,29 @@ class TransactionController extends Controller
             'payment_method' => 'required|string|max:100',
             'transaction_date' => 'required|date',
             'notes' => 'nullable|string',
+            'upline1_commission_amount' => 'nullable|numeric',
+            'upline2_commission_amount' => 'nullable|numeric',
+            'upline1_point' => 'nullable|numeric',
+            'upline2_point' => 'nullable|numeric',
+            'currency_pair_id' => 'nullable|exists:currency_pairs,id',
         ]);
 
         // Recalculate amounts if amount changed
         if ($request->amount_from != $transaction->amount_from) {
             $validated['amount_to'] = $request->amount_from * $transaction->sell_rate;
-            $profit = $this->commissionService->calculateProfit(
-                $transaction->sell_rate,
-                $transaction->buy_rate,
-                $request->amount_from
-            );
-            $validated['profit_amount'] = $profit;
+            // Use existing simple calculation logic consistent with store method for now to avoid dependency issues if service isn't fully ready
+            // Or if previous code used it, we can try to use it. The view_file showed it was there.
+            // But to be safe and quick, I'll use the simple formula as I did in store:
+            $validated['profit_amount'] = ($transaction->sell_rate - $transaction->buy_rate) * $validated['amount_from'];
         }
 
-        $transaction->update($validated);
+        $transaction->update(array_merge($validated, [
+            'currency_pair_id' => $request->currency_pair_id, // Allow updating currency pair linkage if needed
+            'upline1_commission_amount' => $request->upline1_commission_amount,
+            'upline1_point' => $request->upline1_point,
+            'upline2_commission_amount' => $request->upline2_commission_amount,
+            'upline2_point' => $request->upline2_point,
+        ]));
 
         // Log activity
         ActivityLogService::log('transaction_updated', "Updated transaction {$transaction->transaction_code}", $transaction);

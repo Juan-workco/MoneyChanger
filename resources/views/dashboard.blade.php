@@ -8,6 +8,39 @@
         <p class="text-muted">Welcome back, {{ Auth::user()->name }}!</p>
     </div>
 
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <a href="{{ route('transactions.create') }}" class="btn btn-primary btn-block text-white">
+                                <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                                New Transaction
+                            </a>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <a href="{{ route('customers.create') }}" class="btn btn-success btn-block text-white">
+                                <i class="fas fa-user-plus fa-2x mb-2"></i><br>
+                                Add Customer
+                            </a>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <a href="{{ route('reports.daily') }}" class="btn btn-warning btn-block text-white">
+                                <i class="fas fa-file-alt fa-2x mb-2"></i><br>
+                                View Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Stats Cards -->
     <div class="row">
         <div class="col-md-3">
@@ -213,36 +246,5 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 text-center mb-3">
-                            <a href="{{ route('transactions.create') }}" class="btn btn-primary btn-block text-white">
-                                <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
-                                New Transaction
-                            </a>
-                        </div>
-                        <div class="col-md-4 text-center mb-3">
-                            <a href="{{ route('customers.create') }}" class="btn btn-success btn-block text-white">
-                                <i class="fas fa-user-plus fa-2x mb-2"></i><br>
-                                Add Customer
-                            </a>
-                        </div>
-                        <div class="col-md-4 text-center mb-3">
-                            <a href="{{ route('reports.daily') }}" class="btn btn-warning btn-block text-white">
-                                <i class="fas fa-file-alt fa-2x mb-2"></i><br>
-                                View Reports
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
 @endsection

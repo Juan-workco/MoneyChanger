@@ -12,33 +12,90 @@ use Carbon\Carbon;
 class ExchangeRateController extends Controller
 {
     /**
-     * Display a listing of exchange rates
+     * Display a listing of currency pairs with their monthly rates
      */
-    public function index(Request $request)
+    public function index()
     {
         if (!auth()->user()->hasPermission('view_exchange_rates')) {
             return redirect()->route('dashboard')->with('error', 'You do not have permission to view exchange rates.');
         }
 
-        $query = ExchangeRate::with(['currencyFrom', 'currencyTo', 'creator']);
+        $pairs = \App\CurrencyPair::with(['baseCurrency', 'targetCurrency'])
+            ->join('currencies', 'currency_pairs.base_currency_id', '=', 'currencies.id')
+            ->select('currency_pairs.*')
+            ->orderBy('currencies.name')
+            ->get();
+
+        // Attach current monthly rate
+        $currentMonth = date('Y-m');
+        foreach ($pairs as $pair) {
+            $pair->currentMonthlyRate = \App\MonthlyRate::where('currency_pair_id', $pair->id)
+                ->where('month', $currentMonth)
+                ->first();
+
+            // Attach latest active exchange rate
+            $pair->activeRate = ExchangeRate::where('currency_from_id', $pair->base_currency_id)
+                ->where('currency_to_id', $pair->target_currency_id)
+                ->where('is_active', true)
+                ->orderBy('effective_date', 'desc')
+                ->first();
+        }
+
+        return view('exchange-rates.index', compact('pairs', 'currentMonth'));
+    }
+
+    /**
+     * Show historical rates for a specific currency pair
+     */
+    public function history(Request $request, $pairId)
+    {
+        if (!auth()->user()->hasPermission('view_exchange_rates')) {
+            return redirect()->route('dashboard')->with('error', 'You do not have permission to view exchange rates.');
+        }
+
+        $pair = \App\CurrencyPair::findOrFail($pairId);
+
+        $query = ExchangeRate::where('currency_from_id', $pair->base_currency_id)
+            ->where('currency_to_id', $pair->target_currency_id)
+            ->with(['creator']);
 
         // Filter by active status
         if ($request->has('status')) {
             $query->where('is_active', $request->status === 'active');
         }
 
-        // Filter by currency pair
-        if ($request->has('currency_from') && $request->currency_from) {
-            $query->where('currency_from_id', $request->currency_from);
-        }
-        if ($request->has('currency_to') && $request->currency_to) {
-            $query->where('currency_to_id', $request->currency_to);
-        }
-
         $rates = $query->orderBy('effective_date', 'desc')->paginate(20);
-        $currencies = Currency::active()->orderBy('code')->get();
 
-        return view('exchange-rates.index', compact('rates', 'currencies'));
+        return view('exchange-rates.history', compact('pair', 'rates'));
+    }
+
+    /**
+     * Store or Update Monthly Fixed Rate
+     */
+    public function storeMonthlyRate(Request $request)
+    {
+        if (!auth()->user()->hasPermission('manage_exchange_rates')) {
+            return back()->with('error', 'Permission denied.');
+        }
+
+        $validated = $request->validate([
+            'currency_pair_id' => 'required|exists:currency_pairs,id',
+            'month' => 'required|date_format:Y-m',
+            'rate' => 'required|numeric|min:0'
+        ]);
+
+        \App\MonthlyRate::updateOrCreate(
+            [
+                'currency_pair_id' => $validated['currency_pair_id'],
+                'month' => $validated['month']
+            ],
+            [
+                'rate' => $validated['rate'],
+                'created_by' => Auth::id()
+            ]
+        );
+
+        return back()->with('success', 'Monthly rate updated successfully.');
     }
 
     /**
@@ -51,9 +108,11 @@ class ExchangeRateController extends Controller
         }
 
         $currencies = Currency::active()->orderBy('code')->get();
+        // We might want to pass pairs here too if we want to select by pair instead of individual currencies
+        $pairs = \App\CurrencyPair::with(['baseCurrency', 'targetCurrency'])->get();
         $defaultCurrency = \App\SystemSetting::get('default_currency', 'MYR');
 
-        return view('exchange-rates.create', compact('currencies', 'defaultCurrency'));
+        return view('exchange-rates.create', compact('currencies', 'pairs', 'defaultCurrency'));
     }
 
     /**
@@ -76,10 +135,21 @@ class ExchangeRateController extends Controller
 
         $validated['created_by'] = Auth::id();
         $validated['is_active'] = $request->has('is_active') ? true : false;
+        $validated['effective_date'] = Carbon::parse($request->effective_date);
 
         $rate = ExchangeRate::create($validated);
 
         ActivityLogService::log('exchange_rate_created', "Created exchange rate for {$rate->currencyFrom->code}/{$rate->currencyTo->code}", $rate);
+
+        // Redirect to history for this pair
+        $pair = \App\CurrencyPair::where('base_currency_id', $validated['currency_from_id'])
+            ->where('target_currency_id', $validated['currency_to_id'])
+            ->first();
+
+        if ($pair) {
+            return redirect()->route('exchange-rates.history', $pair->id)
+                ->with('success', 'Exchange rate created successfully');
+        }
 
         return redirect()->route('exchange-rates.index')
             ->with('success', 'Exchange rate created successfully');
@@ -124,6 +194,16 @@ class ExchangeRateController extends Controller
 
         ActivityLogService::log('exchange_rate_updated', "Updated exchange rate for {$rate->currencyFrom->code}/{$rate->currencyTo->code}", $rate);
 
+        // Redirect to history
+        $pair = \App\CurrencyPair::where('base_currency_id', $rate->currency_from_id)
+            ->where('target_currency_id', $rate->currency_to_id)
+            ->first();
+
+        if ($pair) {
+            return redirect()->route('exchange-rates.history', $pair->id)
+                ->with('success', 'Exchange rate updated successfully');
+        }
+
         return redirect()->route('exchange-rates.index')
             ->with('success', 'Exchange rate updated successfully');
     }
@@ -138,17 +218,24 @@ class ExchangeRateController extends Controller
         }
 
         $rate = ExchangeRate::findOrFail($id);
+        $pairObj = \App\CurrencyPair::where('base_currency_id', $rate->currency_from_id)
+            ->where('target_currency_id', $rate->currency_to_id)
+            ->first();
 
         // Check if rate is used in transactions
         if ($rate->transactions()->count() > 0) {
-            return redirect()->route('exchange-rates.index')
-                ->with('error', 'Cannot delete exchange rate that is used in transactions');
+            return back()->with('error', 'Cannot delete exchange rate that is used in transactions');
         }
 
         $pair = $rate->currencyFrom->code . '/' . $rate->currencyTo->code;
         $rate->delete();
 
         ActivityLogService::log('exchange_rate_deleted', "Deleted exchange rate for $pair");
+
+        if ($pairObj) {
+            return redirect()->route('exchange-rates.history', $pairObj->id)
+                ->with('success', 'Exchange rate deleted successfully');
+        }
 
         return redirect()->route('exchange-rates.index')
             ->with('success', 'Exchange rate deleted successfully');

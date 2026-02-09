@@ -15,15 +15,23 @@ class Transaction extends Model
         'currency_from_id',
         'currency_to_id',
         'exchange_rate_id',
+        'currency_pair_id',
         'amount_from',
         'amount_to',
         'buy_rate',
         'sell_rate',
+        'monthly_rate',
+        'service_fee',
         'payment_method',
         'status',
         'transaction_date',
+        'is_backdated',
         'agent_commission',
         'profit_amount',
+        'upline1_commission_amount',
+        'upline1_point',
+        'upline2_commission_amount',
+        'upline2_point',
         'notes',
         'created_by'
     ];
@@ -35,6 +43,10 @@ class Transaction extends Model
         'sell_rate' => 'decimal:6',
         'agent_commission' => 'decimal:2',
         'profit_amount' => 'decimal:2',
+        'upline1_commission_amount' => 'decimal:2',
+        'upline2_commission_amount' => 'decimal:2',
+        'upline1_point' => 'decimal:4',
+        'upline2_point' => 'decimal:4',
     ];
 
     protected $dates = [
@@ -51,19 +63,33 @@ class Transaction extends Model
 
         static::creating(function ($transaction) {
             if (empty($transaction->transaction_code)) {
-                $transaction->transaction_code = self::generateTransactionCode();
+                $transaction->transaction_code = self::generateTransactionCode($transaction);
             }
         });
     }
 
     /**
      * Generate unique transaction code
+     * Format: YYMMDD-UserName-SOXXX
      */
-    public static function generateTransactionCode()
+    public static function generateTransactionCode($transaction = null)
     {
-        $date = date('Ymd');
-        $count = self::whereDate('created_at', today())->count() + 1;
-        return 'TXN-' . $date . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        $date = date('ymd');
+
+        $userName = 'System';
+        if ($transaction && $transaction->created_by) {
+            $user = User::find($transaction->created_by);
+            if ($user) {
+                $userName = $user->username;
+            }
+        } elseif (\Illuminate\Support\Facades\Auth::check()) {
+            $userName = \Illuminate\Support\Facades\Auth::user()->username;
+        }
+
+        // Count transactions for today to generate sequence
+        $count = self::whereDate('created_at', \Carbon\Carbon::today())->count() + 1;
+
+        return $date . '-' . $userName . '-SO' . str_pad($count, 3, '0', STR_PAD_LEFT);
     }
 
     /**

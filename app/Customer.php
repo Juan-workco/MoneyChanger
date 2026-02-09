@@ -8,12 +8,16 @@ class Customer extends Model
 {
     protected $fillable = [
         'name',
+        'group_name',
         'email',
+        'contact_info',
         'phone',
         'address',
         'country',
         'is_active',
-        'agent_id'
+        'agent_id',
+        'upline1_id',
+        'upline2_id'
     ];
 
     protected $casts = [
@@ -44,6 +48,27 @@ class Customer extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Get the first upline
+     */
+    public function upline1()
+    {
+        return $this->belongsTo(User::class, 'upline1_id');
+    }
+
+    /**
+     * Get the second upline
+     */
+    public function upline2()
+    {
+        return $this->belongsTo(User::class, 'upline2_id');
+    }
+
+    public function commissions()
+    {
+        return $this->hasMany(CustomerUplineCommission::class);
     }
 
     /**

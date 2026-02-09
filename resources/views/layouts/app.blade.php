@@ -17,6 +17,10 @@
     <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css"
+        rel="stylesheet" />
 
     <style>
         /* Custom overrides for CoreUI v1 */
@@ -153,25 +157,34 @@
                     @endif
 
                     @if(Auth::user()->hasPermission('view_currencies') || Auth::user()->hasPermission('view_exchange_rates') || Auth::user()->hasPermission('manage_users') || Auth::user()->hasPermission('manage_roles'))
-                    <li class="nav-title">Administration</li>
+                        <li class="nav-title">Administration</li>
                     @endif
 
                     @if(Auth::user()->hasPermission('view_currencies'))
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('currencies*') ? 'active' : '' }}"
-                            href="{{ route('currencies.index') }}">
-                            <i class="nav-icon fas fa-coins"></i> Currencies
-                        </a>
-                    </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('currencies*') ? 'active' : '' }}"
+                                href="{{ route('currencies.index') }}">
+                                <i class="nav-icon fas fa-coins"></i> Currencies
+                            </a>
+                        </li>
                     @endif
 
                     @if(Auth::user()->hasPermission('view_exchange_rates'))
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('exchange-rates*') ? 'active' : '' }}"
-                            href="{{ route('exchange-rates.index') }}">
-                            <i class="nav-icon fas fa-chart-line"></i> Exchange Rates
-                        </a>
-                    </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('exchange-rates*') ? 'active' : '' }}"
+                                href="{{ route('exchange-rates.index') }}">
+                                <i class="nav-icon fas fa-chart-line"></i> Exchange Rates
+                            </a>
+                        </li>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('view_currencies'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('currency-pairs*') ? 'active' : '' }}"
+                                href="{{ route('currency-pairs.index') }}">
+                                <i class="nav-icon fas fa-exchange-alt"></i> Currency Pairs
+                            </a>
+                        </li>
                     @endif
 
                     @if(Auth::user()->hasPermission('manage_users'))
@@ -258,6 +271,8 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <!-- Flatpickr -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{{ asset('coreui/js/app.js') }}"></script>
 
     <script>

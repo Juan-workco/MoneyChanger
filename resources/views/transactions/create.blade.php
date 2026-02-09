@@ -69,9 +69,9 @@
                                     </div>
 
                                     <div class="form-group col-md-4">
-                                        <label for="sell_rate">Exchange Rate</label>
-                                        <input type="number" step="0.01" class="form-control" id="sell_rate"
-                                            name="sell_rate" value="{{ old('sell_rate') }}" readonly>
+                                        <label for="sell_rate">Exchange Rate <span class="text-danger">*</span></label>
+                                        <input type="number" step="0.000001" class="form-control" id="sell_rate"
+                                            name="sell_rate" value="{{ old('sell_rate') }}" required>
                                         <small class="form-text text-muted" id="rate_display">Select currency pair</small>
                                     </div>
 
@@ -79,6 +79,43 @@
                                         <label for="amount_to">Amount To</label>
                                         <input type="number" step="0.01" class="form-control" id="amount_to"
                                             name="amount_to" value="{{ old('amount_to') }}" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="service_fee">Service Fee</label>
+                                    <input type="number" step="0.01" class="form-control" id="service_fee"
+                                        name="service_fee" value="{{ old('service_fee', 0) }}">
+                                </div>
+
+                                <div class="form-row">
+                                    <!-- <h5 class="mb-3">Commission Calculation</h5> -->
+                                    
+                                    <input type="hidden" name="currency_pair_id" id="currency_pair_id">
+                                    <input type="hidden" name="upline1_point" id="upline1_point">
+                                    <input type="hidden" name="upline2_point" id="upline2_point">
+
+                                    <div class="form-group col-md-6">
+                                        <label for="upline1_commission_amount">Upline 1 Commission</label>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" class="form-control" 
+                                                id="upline1_commission_amount" name="upline1_commission_amount" 
+                                                value="{{ old('upline1_commission_amount') }}">
+                                            <div class="input-group-append">
+                                                <span class="input-group-text" id="upline1_point_display">Pt: -</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label for="upline2_commission_amount">Upline 2 Commission</label>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" class="form-control" 
+                                                id="upline2_commission_amount" name="upline2_commission_amount" 
+                                                value="{{ old('upline2_commission_amount') }}">
+                                            <div class="input-group-append">
+                                                <span class="input-group-text" id="upline2_point_display">Pt: -</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -116,9 +153,13 @@
                                     @endif
                                 </div>
                             </div>
+                            </div>
                         </div>
 
-                        <div class="mt-4 border-top pt-3">
+                        <div class="card-body">
+                        </div>
+
+                        <div class="card-body">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Create Transaction
                             </button>
@@ -134,28 +175,51 @@
 @section('scripts')
     <script>
         $(document).ready(function () {
-            // Fetch exchange rate when To Currency changes
-            $('#currency_to_id').change(function () {
-                var fromId = $('#currency_from_id').val();
-                var toId = $(this).val();
-                var toCode = $(this).find(':selected').data('code');
-                var fromCode = '{{ $defaultCurrency->code }}';
+            // Data passed from controller
+            var currencyPairs = @json($currencyPairs);
+            var customerCommissions = {}; 
+            
+            // Build customer commission map efficiently
+            // Structure: { customer_id: { pair_id: { upline1: point, upline2: point } } }
+            @foreach($customers as $cust)
+                customerCommissions[{{ $cust->id }}] = {};
+                @foreach($cust->commissions as $comm)
+                    if (!customerCommissions[{{ $cust->id }}][{{ $comm->currency_pair_id }}]) {
+                        customerCommissions[{{ $cust->id }}][{{ $comm->currency_pair_id }}] = {};
+                    }
+                    customerCommissions[{{ $cust->id }}][{{ $comm->currency_pair_id }}]['{{ $comm->upline_level }}'] = {{ $comm->point_value }};
+                @endforeach
+            @endforeach
 
-                if (fromId && toId) {
+            var currentPairId = null;
+            var currentPoints = { upline1: 0, upline2: 0 };
+            var autoCalcUpline1 = true;
+            var autoCalcUpline2 = true;
+
+            // Fetch exchange rate when currencies change
+            function fetchExchangeRate() {
+                const currencyFrom = $('#currency_from_id').val();
+                const currencyTo = $('#currency_to_id').val();
+                const toCode = $('#currency_to_id').find(':selected').data('code');
+                const fromCode = '{{ $defaultCurrency->code }}';
+
+                detectCurrencyPair(currencyFrom, currencyTo);
+
+                if (currencyFrom && currencyTo && currencyFrom !== currencyTo) {
                     $.ajax({
-                        url: '{{ route("exchange-rates.get-active") }}',
-                        type: 'GET',
+                        url: "{{ route('exchange-rates.get-active-rate') }}",
+                        method: 'GET',
                         data: {
-                            currency_from_id: fromId,
-                            currency_to_id: toId
+                            currency_from_id: currencyFrom,
+                            currency_to_id: currencyTo
                         },
                         success: function (response) {
-                            console.log(response)
                             if (response.success && response.rate) {
                                 var rate = parseFloat(response.rate.sell_rate).toFixed(2);
                                 $('#sell_rate').val(rate);
                                 $('#rate_display').text(fromCode + ' to ' + toCode + ': ' + rate);
                                 calculateAmountTo();
+                                calculateCommissions(); // Recalc comms when rate changes
                             } else {
                                 $('#sell_rate').val('');
                                 $('#rate_display').html('<span class="text-danger">No rate found for this pair</span>');
@@ -169,11 +233,112 @@
                         }
                     });
                 }
+            }
+
+            // Bind event listeners
+            $('#currency_from_id, #currency_to_id').change(fetchExchangeRate);
+
+            // Fetch on load if values exist
+            fetchExchangeRate();
+
+            // Detect Currency Pair ID from selected currencies
+            function detectCurrencyPair(baseId, targetId) {
+                currentPairId = null;
+                // Find pair in currencyPairs array
+                for (var i = 0; i < currencyPairs.length; i++) {
+                    if (currencyPairs[i].base_currency_id == baseId && currencyPairs[i].target_currency_id == targetId) {
+                        currentPairId = currencyPairs[i].id;
+                        $('#currency_pair_id').val(currentPairId);
+                        break;
+                    }
+                }
+                updateEffectivePoints();
+            }
+
+            // Update Effective Points based on Customer + Pair
+            function updateEffectivePoints() {
+                var customerId = $('#customer_id').val();
+                
+                // Reset to 0 first
+                currentPoints.upline1 = 0;
+                currentPoints.upline2 = 0;
+
+                if (currentPairId) {
+                    // Get System Default for this pair
+                    var pair = currencyPairs.find(p => p.id == currentPairId);
+                    
+                    // Check if commission is enabled for this pair
+                    if (pair && pair.is_commission_enabled === false) {
+                        currentPoints.upline1 = 0;
+                        currentPoints.upline2 = 0;
+                        
+                        // Disable inputs & update display
+                        $('#upline1_commission_amount').prop('readonly', true).val('');
+                        $('#upline2_commission_amount').prop('readonly', true).val('');
+                        $('#upline1_point_display').text('Disabled');
+                        $('#upline2_point_display').text('Disabled');
+                        
+                        // Update Hidden Inputs
+                        $('#upline1_point').val(0);
+                        $('#upline2_point').val(0);
+                        
+                        // Skip further calc
+                        calculateCommissions();
+                        return;
+                    } else {
+                        // Re-enable inputs
+                        $('#upline1_commission_amount').prop('readonly', false);
+                        $('#upline2_commission_amount').prop('readonly', false);
+                    }
+
+                    var sysDefault = pair ? parseFloat(pair.default_point) : 0;
+
+                    // Set fallback defaults
+                    currentPoints.upline1 = sysDefault;
+                    currentPoints.upline2 = sysDefault;
+
+                    // Check Customer Overrides
+                    if (customerId && customerCommissions[customerId] && customerCommissions[customerId][currentPairId]) {
+                        var overrides = customerCommissions[customerId][currentPairId];
+                        if (overrides.upline1 !== undefined && overrides.upline1 !== null) {
+                            currentPoints.upline1 = parseFloat(overrides.upline1);
+                        }
+                        if (overrides.upline2 !== undefined && overrides.upline2 !== null) {
+                            currentPoints.upline2 = parseFloat(overrides.upline2);
+                        }
+                    }
+                }
+
+                // Update UI Display
+                $('#upline1_point_display').text('Pt: ' + currentPoints.upline1);
+                $('#upline2_point_display').text('Pt: ' + currentPoints.upline2);
+                
+                // Update Hidden Inputs
+                $('#upline1_point').val(currentPoints.upline1);
+                $('#upline2_point').val(currentPoints.upline2);
+
+                calculateCommissions();
+            }
+
+            // Customer Change Listener
+            $('#customer_id').change(function() {
+                updateEffectivePoints();
             });
 
             // Calculate Amount To when Amount From changes (using keyup for real-time)
-            $('#amount_from').on('keyup input', function () {
+            $('#amount_from, #sell_rate').on('keyup input', function () {
                 calculateAmountTo();
+                calculateCommissions();
+            });
+            
+            // Manual Commission Override Listeners
+            $('#upline1_commission_amount').on('input', function() {
+                autoCalcUpline1 = false;
+                updateRemarks();
+            });
+            $('#upline2_commission_amount').on('input', function() {
+                autoCalcUpline2 = false;
+                updateRemarks();
             });
 
             function calculateAmountTo() {
@@ -182,6 +347,75 @@
                 var amountTo = amountFrom * rate;
                 $('#amount_to').val(amountTo > 0 ? amountTo.toFixed(2) : '');
             }
+
+            function calculateCommissions() {
+                var amountFrom = parseFloat($('#amount_from').val()) || 0;
+                var rate = parseFloat($('#sell_rate').val()) || 0;
+
+                if (amountFrom > 0 && rate > 0) {
+                    // Formula: (Amount / Rate) - (Amount / (Rate + Point))
+                    
+                    // Upline 1
+                    if (autoCalcUpline1) {
+                        var pt1 = currentPoints.upline1;
+                        // Avoid division by zero if rate + pt is 0
+                        if (rate + pt1 !== 0) {
+                            var comm1 = (amountFrom / rate) - (amountFrom / (rate + pt1));
+                            $('#upline1_commission_amount').val(comm1.toFixed(2));
+                        }
+                    }
+
+                    // Upline 2
+                    if (autoCalcUpline2) {
+                        var pt2 = currentPoints.upline2;
+                        if (rate + pt2 !== 0) {
+                            var comm2 = (amountFrom / rate) - (amountFrom / (rate + pt2));
+                            $('#upline2_commission_amount').val(comm2.toFixed(2));
+                        }
+                    }
+                    
+                    updateRemarks();
+                }
+            }
+            
+            function updateRemarks() {
+                var remarks = [];
+                
+                // Upline 1 Status
+                if (autoCalcUpline1) {
+                    remarks.push("Upline 1: Auto-calculated (Pt: " + currentPoints.upline1 + ")");
+                } else {
+                    remarks.push("Upline 1: Manual Override");
+                }
+                
+                // Upline 2 Status
+                if (autoCalcUpline2) {
+                    remarks.push("Upline 2: Auto-calculated (Pt: " + currentPoints.upline2 + ")");
+                } else {
+                    remarks.push("Upline 2: Manual Override");
+                }
+                
+                // Smart Update: Preserve user notes, replace system remarks
+                var currentNotes = $('#notes').val();
+                var lines = currentNotes.split('\n');
+                var keptLines = [];
+                
+                // Filter out existing system remarks
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (line !== '' && !line.startsWith('Upline 1:') && !line.startsWith('Upline 2:')) {
+                        keptLines.push(lines[i]); // Keep user note (preserve original whitespace if desired, but trim check avoids empty lines abuse)
+                    }
+                }
+                
+                // Combine: User Notes + New System Remarks
+                var newNotes = keptLines.concat(remarks).join('\n');
+                $('#notes').val(newNotes);
+            }
+            
+            // Trigger update on load? 
+            // In create view, notes are empty, so it just populates.
+            updateRemarks();
         });
     </script>
 @endsection

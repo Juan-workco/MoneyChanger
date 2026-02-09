@@ -85,6 +85,11 @@
                                     <span class="badge badge-secondary"
                                         style="font-size: 14px; padding: 8px 12px;">{{ ucfirst($transaction->status) }}</span>
                                 @endif
+
+                                @if($transaction->is_backdated)
+                                    <span class="badge badge-warning ml-2" style="font-size: 14px; padding: 8px 12px;"
+                                        title="This transaction was backdated">Backdated</span>
+                                @endif
                             </div>
                             <small class="text-muted mt-2 d-block">Change status from the Transactions list</small>
                         </div>
@@ -118,11 +123,53 @@
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Service Fee:</strong>
+                            <p>
+                                @if($transaction->service_fee > 0)
+                                    {{ number_format($transaction->service_fee, 2) }}
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Upline 1 Commission:</strong>
+                            <p>
+                                @if($transaction->upline1_commission_amount)
+                                    {{ number_format($transaction->upline1_commission_amount, 2) }}
+                                    @if($transaction->upline1_point)
+                                        <small class="text-muted">(Pt: {{ $transaction->upline1_point }})</small>
+                                    @endif
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Upline 2 Commission:</strong>
+                            <p>
+                                @if($transaction->upline2_commission_amount)
+                                    {{ number_format($transaction->upline2_commission_amount, 2) }}
+                                    @if($transaction->upline2_point)
+                                        <small class="text-muted">(Pt: {{ $transaction->upline2_point }})</small>
+                                    @endif
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+
                     @if($transaction->notes)
                         <div class="row">
                             <div class="col-12">
                                 <strong>Notes:</strong>
-                                <p class="text-muted">{{ $transaction->notes }}</p>
+                                <p class="text-muted">{!! nl2br(e($transaction->notes)) !!}</p>
                             </div>
                         </div>
                     @endif
