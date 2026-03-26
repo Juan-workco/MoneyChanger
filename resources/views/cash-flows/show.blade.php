@@ -21,7 +21,6 @@
                             <span class="badge badge-danger ml-2" title="Backdated">Backdated</span>
                         @endif
                     </h5>
-                    <span class="badge badge-secondary">{{ ucfirst($cashFlow->status) }}</span>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">

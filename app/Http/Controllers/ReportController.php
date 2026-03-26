@@ -139,4 +139,22 @@ class ReportController extends Controller
         $pdf = PDF::loadView('reports.pdf.profit_loss', compact('report', 'startDate', 'endDate'));
         return $pdf->download('profit-loss-' . $startDate . '-to-' . $endDate . '.pdf');
     }
+
+    /**
+     * Show customer statement
+     */
+    public function customerStatement(Request $request)
+    {
+        $customers = \App\Customer::orderBy('name')->get();
+        $customerId = $request->get('customer_id');
+        $startDate = $request->get('start_date', date('Y-m-01'));
+        $endDate = $request->get('end_date', date('Y-m-d'));
+
+        $statement = null;
+        if ($customerId) {
+            $statement = $this->reportService->customerStatement($customerId, $startDate, $endDate);
+        }
+
+        return view('reports.customer_statement', compact('customers', 'customerId', 'startDate', 'endDate', 'statement'));
+    }
 }

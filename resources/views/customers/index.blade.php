@@ -6,11 +6,9 @@
     <div
         class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Customers</h1>
-        @if(Auth::user()->hasPermission('manage_customers'))
-            <a href="{{ route('customers.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add New Customer
-            </a>
-        @endif
+        <a href="{{ route('customers.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Customer
+        </a>
     </div>
 
     <div class="card">

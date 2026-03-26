@@ -63,37 +63,39 @@
                                     @endif
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="upline1_id">Upline 1 <span class="text-muted">(Optional)</span></label>
-                                    <select class="form-control {{ $errors->has('upline1_id') ? 'is-invalid' : '' }}"
-                                        id="upline1_id" name="upline1_id">
-                                        <option value="">-- Select Upline 1 --</option>
-                                        @foreach($agents as $agent)
-                                            <option value="{{ $agent->id }}" {{ old('upline1_id', $customer->upline1_id) == $agent->id ? 'selected' : '' }}>
-                                                {{ $agent->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @if ($errors->has('upline1_id'))
-                                        <div class="invalid-feedback d-block">{{ $errors->first('upline1_id') }}</div>
-                                    @endif
-                                </div>
+                                @if($canManageUplines)
+                                    <div class="form-group">
+                                        <label for="upline1_id">Upline 1 <span class="text-muted">(Optional)</span></label>
+                                        <select class="form-control {{ $errors->has('upline1_id') ? 'is-invalid' : '' }}"
+                                            id="upline1_id" name="upline1_id">
+                                            <option value="">-- Select Upline 1 --</option>
+                                            @foreach($agents as $agent)
+                                                <option value="{{ $agent->id }}" {{ old('upline1_id', $customer->upline1_id) == $agent->id ? 'selected' : '' }}>
+                                                    {{ $agent->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @if ($errors->has('upline1_id'))
+                                            <div class="invalid-feedback d-block">{{ $errors->first('upline1_id') }}</div>
+                                        @endif
+                                    </div>
 
-                                <div class="form-group">
-                                    <label for="upline2_id">Upline 2 <span class="text-muted">(Optional)</span></label>
-                                    <select class="form-control {{ $errors->has('upline2_id') ? 'is-invalid' : '' }}"
-                                        id="upline2_id" name="upline2_id">
-                                        <option value="">-- Select Upline 2 --</option>
-                                        @foreach($agents as $agent)
-                                            <option value="{{ $agent->id }}" {{ old('upline2_id', $customer->upline2_id) == $agent->id ? 'selected' : '' }}>
-                                                {{ $agent->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @if ($errors->has('upline2_id'))
-                                        <div class="invalid-feedback d-block">{{ $errors->first('upline2_id') }}</div>
-                                    @endif
-                                </div>
+                                    <div class="form-group">
+                                        <label for="upline2_id">Upline 2 <span class="text-muted">(Optional)</span></label>
+                                        <select class="form-control {{ $errors->has('upline2_id') ? 'is-invalid' : '' }}"
+                                            id="upline2_id" name="upline2_id">
+                                            <option value="">-- Select Upline 2 --</option>
+                                            @foreach($agents as $agent)
+                                                <option value="{{ $agent->id }}" {{ old('upline2_id', $customer->upline2_id) == $agent->id ? 'selected' : '' }}>
+                                                    {{ $agent->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @if ($errors->has('upline2_id'))
+                                            <div class="invalid-feedback d-block">{{ $errors->first('upline2_id') }}</div>
+                                        @endif
+                                    </div>
+                                @endif
 
                                 <div class="form-group">
                                     <label for="email">Email Address</label>
@@ -145,57 +147,59 @@
                 </div>
 
                 {{-- Commission Configuration Section --}}
-                <div class="card-body row mt-4">
-                    <div class="col-12">
-                        <h5 class="text-muted mb-3"><i class="fas fa-percentage"></i> Commission Points Configuration</h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped table-sm">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th style="width: 30%">Currency Pair</th>
-                                        <th style="width: 35%">Upline 1 Point</th>
-                                        <th style="width: 35%">Upline 2 Point</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if($currencyPairs->isEmpty())
+                @if($canManageUplines)
+                    <div class="card-body row mt-4">
+                        <div class="col-12">
+                            <h5 class="text-muted mb-3"><i class="fas fa-percentage"></i> Commission Points Configuration</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped table-sm">
+                                    <thead class="thead-light">
                                         <tr>
-                                            <td colspan="3" class="text-center text-muted">No active currency pairs found.</td>
+                                            <th style="width: 30%">Currency Pair</th>
+                                            <th style="width: 35%">Upline 1 Point</th>
+                                            <th style="width: 35%">Upline 2 Point</th>
                                         </tr>
-                                    @else
-                                        @foreach($currencyPairs as $pair)
-                                            @php
-                                                $val1 = old("commissions.{$pair->id}.upline1", $existingCommissions[$pair->id]['upline1'] ?? '');
-                                                $val2 = old("commissions.{$pair->id}.upline2", $existingCommissions[$pair->id]['upline2'] ?? '');
-                                            @endphp
+                                    </thead>
+                                    <tbody>
+                                        @if($currencyPairs->isEmpty())
                                             <tr>
-                                                <td class="align-middle font-weight-bold">
-                                                    {{ $pair->name }}
-                                                    <small class="text-muted d-block">Default:
-                                                        {{ number_format($pair->default_point, 4) }}</small>
-                                                </td>
-                                                <td sty le="vertical-align: middle;">
-                                                    <input type="number" step="0.0001" class="form-control form-control-sm"
-                                                        name="commissions[{{ $pair->id }}][upline1]"
-                                                        placeholder="Default: {{ $pair->default_point }}" value="{{ $val1 }}">
-                                                </td>
-                                                <td style="vertical-align: middle;">
-                                                    <input type="number" step="0.0001" class="form-control form-control-sm"
-                                                        name="commissions[{{ $pair->id }}][upline2]"
-                                                        placeholder="Default: {{ $pair->default_point }}" value="{{ $val2 }}">
-                                                </td>
+                                                <td colspan="3" class="text-center text-muted">No active currency pairs found.</td>
                                             </tr>
-                                        @endforeach
-                                    @endif
-                                </tbody>
-                            </table>
+                                        @else
+                                            @foreach($currencyPairs as $pair)
+                                                @php
+                                                    $val1 = old("commissions.{$pair->id}.upline1", $existingCommissions[$pair->id]['upline1'] ?? '');
+                                                    $val2 = old("commissions.{$pair->id}.upline2", $existingCommissions[$pair->id]['upline2'] ?? '');
+                                                @endphp
+                                                <tr>
+                                                    <td class="align-middle font-weight-bold">
+                                                        {{ $pair->name }}
+                                                        <small class="text-muted d-block">Default:
+                                                            {{ number_format($pair->default_point, 4) }}</small>
+                                                    </td>
+                                                    <td sty le="vertical-align: middle;">
+                                                        <input type="number" step="0.0001" class="form-control form-control-sm"
+                                                            name="commissions[{{ $pair->id }}][upline1]"
+                                                            placeholder="Default: {{ $pair->default_point }}" value="{{ $val1 }}">
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <input type="number" step="0.0001" class="form-control form-control-sm"
+                                                            name="commissions[{{ $pair->id }}][upline2]"
+                                                            placeholder="Default: {{ $pair->default_point }}" value="{{ $val2 }}">
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Leave blank to use the default system point. Enter specific value (e.g. 0.02) to override.
+                            </small>
                         </div>
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i>
-                            Leave blank to use the default system point. Enter specific value (e.g. 0.02) to override.
-                        </small>
                     </div>
-                </div>
+                @endif
 
                 <div class="card-body mt-4 pt-3">
                     <button type="submit" class="btn btn-primary">

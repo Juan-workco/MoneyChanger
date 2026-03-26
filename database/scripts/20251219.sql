@@ -311,3 +311,16 @@ CREATE TABLE `cash_flows` (
   CONSTRAINT `cash_flows_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
   CONSTRAINT `cash_flows_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Customer Balance Module (2026-02-19)
+CREATE TABLE `customer_balances` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `customer_id` INT UNSIGNED NOT NULL,
+  `currency_id` INT UNSIGNED NOT NULL,
+  `balance` DECIMAL(15, 2) NOT NULL DEFAULT '0.00',
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  UNIQUE KEY `customer_currency_unique` (`customer_id`, `currency_id`),
+  CONSTRAINT `customer_balances_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `customer_balances_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

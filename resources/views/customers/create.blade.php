@@ -57,6 +57,7 @@
                                     @endif
                                 </div>
 
+                                @if($canManageUplines)
                                 <div class="form-group">
                                     <label for="upline1_id">Upline 1 <span class="text-muted">(Optional)</span></label>
                                     <select class="form-control {{ $errors->has('upline1_id') ? 'is-invalid' : '' }}" 
@@ -90,6 +91,7 @@
                                         <div class="invalid-feedback d-block">{{ $errors->first('upline2_id') }}</div>
                                     @endif
                                 </div>
+                                @endif
 
                                 <div class="form-group">
                                     <label for="email">Email Address</label>
@@ -140,6 +142,7 @@
                         </div>
 
                         {{-- Commission Configuration Section --}}
+                        @if($canManageUplines)
                         <div class="card-body row mt-4">
                             <div class="col-12">
                                 <h5 class="text-muted mb-3"><i class="fas fa-percentage"></i> Commission Points Configuration</h5>
@@ -188,6 +191,7 @@
                                 </small>
                             </div>
                         </div>
+                        @endif
 
                         <div class="card-body mt-4 pt-3">
                             <button type="submit" class="btn btn-primary">

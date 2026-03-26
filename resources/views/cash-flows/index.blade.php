@@ -6,11 +6,9 @@
     <div
         class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Cash Flows (AP/AR/CTC)</h1>
-        @if(Auth::user()->hasPermission('manage_transactions'))
-            <a href="{{ route('cash-flows.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> New Entry
-            </a>
-        @endif
+        <a href="{{ route('cash-flows.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Entry
+        </a>
     </div>
 
     <!-- Filters -->
@@ -66,7 +64,6 @@
                             <th>Customer (Primary)</th>
                             <th>Related (Secondary)</th>
                             <th>Amount</th>
-                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -103,9 +100,6 @@
                                 </td>
                                 <td>
                                     {{ number_format($cf->amount, 2) }} {{ $cf->currency->code }}
-                                </td>
-                                <td>
-                                    <span class="badge badge-secondary">{{ ucfirst($cf->status) }}</span>
                                 </td>
                                 <td>
                                     <a href="{{ route('cash-flows.show', $cf->id) }}" class="btn btn-sm btn-info text-white">

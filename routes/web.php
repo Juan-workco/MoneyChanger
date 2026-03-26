@@ -18,6 +18,9 @@ Route::post('/logout', 'AuthController@logout')->name('logout');
 Route::get('/password/reset', 'AuthController@showResetPassword')->name('password.reset');
 Route::post('/password/update', 'AuthController@updatePassword')->name('password.update');
 
+// Telegram Webhook (No Auth Required)
+Route::post('/telegram/webhook/{token}', 'TelegramController@webhook')->name('telegram.webhook');
+
 // Protected Routes
 Route::middleware(['auth'])->group(function () {
 
@@ -33,12 +36,19 @@ Route::middleware(['auth'])->group(function () {
     // Customer Management
     Route::resource('customers', 'CustomerController');
     Route::get('customers/{id}/transactions', 'CustomerController@transactionHistory')->name('customers.transactions');
+    Route::get('customers/merge', 'CustomerController@mergeForm')->name('customers.merge-form');
+    Route::post('customers/merge', 'CustomerController@merge')->name('customers.merge');
 
     // Exchange Rates
     Route::get('exchange-rates/get-active-rate', 'ExchangeRateController@getActiveRate')->name('exchange-rates.get-active-rate');
     Route::get('exchange-rates/{pair}/history', 'ExchangeRateController@history')->name('exchange-rates.history');
     Route::post('exchange-rates/monthly-rate', 'ExchangeRateController@storeMonthlyRate')->name('exchange-rates.store-monthly-rate');
     Route::resource('exchange-rates', 'ExchangeRateController');
+
+    // Rate Margins
+    Route::get('rate-margins', 'RateMarginController@index')->name('rate-margins.index');
+    Route::post('rate-margins', 'RateMarginController@store')->name('rate-margins.store');
+    Route::get('rate-margins/get', 'RateMarginController@getMargin')->name('rate-margins.get-margin');
 
     // Currency Pairs
     Route::resource('currency-pairs', 'CurrencyPairController')->except(['create', 'edit', 'update', 'show']);
@@ -48,10 +58,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('cash-flows/get-balance', 'CashFlowController@getBalance')->name('cash-flows.get-balance');
     Route::resource('cash-flows', 'CashFlowController');
 
+    // Contra / Netting
+    Route::resource('contras', 'ContraController')->only(['index', 'create', 'store']);
+
 
     // Transactions
     Route::post('transactions/bulk-update-status', 'TransactionController@bulkUpdateStatus')->name('transactions.bulk-update-status');
     Route::post('transactions/{id}/status', 'TransactionController@updateStatus')->name('transactions.update-status');
+    Route::get('transactions/available-to-currencies', 'TransactionController@getAvailableToCurrencies')->name('transactions.available-to-currencies');
     Route::resource('transactions', 'TransactionController');
     Route::get('transactions-search', 'TransactionController@search')->name('transactions.search');
 
@@ -69,10 +83,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('reports/commission', 'ReportController@commissionReport')->name('reports.commission');
         Route::get('reports/export-pdf', 'ReportController@exportPDF')->name('reports.export-pdf');
         Route::get('reports/export-profit-loss-pdf', 'ReportController@exportProfitLossPDF')->name('reports.export-profit-loss-pdf');
+        Route::get('reports/customer-statement', 'ReportController@customerStatement')->name('reports.customer-statement');
     });
 
     // Settings
     Route::group(['middleware' => ['permission:manage_settings']], function () {
+        Route::resource('imports', 'ImportController')->only(['index', 'create', 'store']);
+        Route::get('settings/telegram', 'TelegramController@settings')->name('settings.telegram');
+        Route::post('settings/telegram', 'TelegramController@updateSettings')->name('settings.telegram.update');
         Route::get('settings', 'SettingsController@index')->name('settings.index');
         Route::post('settings/general', 'SettingsController@updateGeneral')->name('settings.update-general');
         Route::get('settings/accounts', 'SettingsController@accounts')->name('settings.accounts');

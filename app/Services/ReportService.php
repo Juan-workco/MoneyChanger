@@ -181,4 +181,75 @@ class ReportService
 
         return $this->profitLoss($startDate, $endDate);
     }
+
+    /**
+     * Generate customer statement — all transactions for a customer in a date range
+     *
+     * @param int $customerId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
+     */
+    public function customerStatement($customerId, $startDate, $endDate)
+    {
+        $customer = \App\Customer::findOrFail($customerId);
+
+        // Sales Orders involving this customer
+        $salesOrders = Transaction::where('customer_id', $customerId)
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->with(['currencyFrom', 'currencyTo'])
+            ->get()
+            ->map(function ($tx) {
+                return [
+                    'date' => $tx->transaction_date,
+                    'type' => 'Sales Order',
+                    'reference' => $tx->order_id ?? $tx->transaction_code,
+                    'description' => ($tx->currencyFrom->code ?? '?') . ' → ' . ($tx->currencyTo->code ?? '?'),
+                    'debit' => $tx->amount_from,
+                    'credit' => $tx->amount_to,
+                    'currency_from' => $tx->currencyFrom->code ?? '',
+                    'currency_to' => $tx->currencyTo->code ?? '',
+                    'status' => $tx->status,
+                ];
+            });
+
+        // AP/AR/CTC transfers involving this customer
+        $transfers = \App\CashFlow::where(function ($q) use ($customerId) {
+            $q->where('from_customer_id', $customerId)
+                ->orWhere('to_customer_id', $customerId);
+        })
+            ->whereBetween('date', [$startDate, $endDate])
+            ->with('currency')
+            ->get()
+            ->map(function ($cf) use ($customerId) {
+                $isFrom = $cf->from_customer_id == $customerId;
+                return [
+                    'date' => $cf->date,
+                    'type' => strtoupper($cf->type),
+                    'reference' => $cf->reference_no ?? ('CF-' . $cf->id),
+                    'description' => $cf->type . ' — ' . ($cf->currency->code ?? '?'),
+                    'debit' => $isFrom ? $cf->amount : 0,
+                    'credit' => !$isFrom ? $cf->amount : 0,
+                    'currency_from' => $cf->currency->code ?? '',
+                    'currency_to' => $cf->currency->code ?? '',
+                    'status' => $cf->status,
+                ];
+            });
+
+        // Merge and sort chronologically
+        $entries = $salesOrders->merge($transfers)->sortBy('date')->values()->all();
+
+        // Current balances
+        $balances = \App\CustomerBalance::where('customer_id', $customerId)
+            ->with('currency')
+            ->get();
+
+        return [
+            'customer' => $customer,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'entries' => $entries,
+            'balances' => $balances,
+        ];
+    }
 }

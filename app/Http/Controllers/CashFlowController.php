@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CashFlow;
 use App\Customer;
 use App\Currency;
+use App\CustomerBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,12 @@ class CashFlowController extends Controller
     public function index(Request $request)
     {
         $query = CashFlow::with(['customer', 'relatedCustomer', 'currency', 'creator']);
+
+        // Role-based filtering: agents only see their own, admins see all
+        $user = Auth::user();
+        if ($user->role !== 'admin') {
+            $query->where('created_by', $user->id);
+        }
 
         if ($request->has('type') && $request->type) {
             $query->where('type', $request->type);
@@ -80,6 +87,44 @@ class CashFlowController extends Controller
         $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
         $isBackdated = $transactionDate->startOfDay()->lt(\Carbon\Carbon::today());
 
+        // Check if Day is Closed
+        if (\App\DayClose::where('close_date', $transactionDate->format('Y-m-d'))->where('status', 'closed')->exists()) {
+            return back()->with('error', "Cannot create cash flow: The accounting date " . $transactionDate->format('Y-m-d') . " is already closed.")->withInput();
+        }
+
+        // Check Credit Limits
+        $adjustment1 = 0;
+        $adjustment2 = 0;
+        if ($request->type === 'ap')
+            $adjustment1 = -$request->amount;
+        elseif ($request->type === 'ar')
+            $adjustment1 = $request->amount;
+        elseif ($request->type === 'ctc') {
+            $adjustment1 = -$request->amount;
+            $adjustment2 = $request->amount;
+        }
+
+        if ($adjustment1 != 0) {
+            $check = \App\Services\LedgerService::checkCreditLimit($request->customer_id, $request->currency_id, $adjustment1);
+            if ($check && $check['exceeded']) {
+                $msg = "Customer exceeds credit limit wrapper of {$check['limit']}. New balance would be " . abs($check['new']);
+                if ($check['enforcement'] === 'block')
+                    return back()->with('error', "BLOCKED: " . $msg)->withInput();
+                elseif (!$request->has('force_credit_limit'))
+                    return back()->withInput()->with('credit_warning', "⚠️ " . $msg . " Check 'Confirm Override' below.");
+            }
+        }
+        if ($adjustment2 != 0 && $request->related_customer_id) {
+            $check = \App\Services\LedgerService::checkCreditLimit($request->related_customer_id, $request->currency_id, $adjustment2);
+            if ($check && $check['exceeded']) {
+                $msg = "Related customer exceeds credit limit of {$check['limit']}.";
+                if ($check['enforcement'] === 'block')
+                    return back()->with('error', "BLOCKED: " . $msg)->withInput();
+                elseif (!$request->has('force_credit_limit'))
+                    return back()->withInput()->with('credit_warning', "⚠️ " . $msg . " Check 'Confirm Override' below.");
+            }
+        }
+
         $code = CashFlow::generateCode($request->type);
 
         // Generate automatic note for backdated entries
@@ -107,9 +152,28 @@ class CashFlowController extends Controller
             'created_by' => Auth::id(),
         ]);
 
+        // Adjust balances using LedgerService
+        if ($request->type === 'ap') {
+            // AP: We pay customer → deduct from their balance and our wallet
+            \App\Services\LedgerService::subtractBalance($transactionDate, 'ap', $cashFlow->id, 'customer', $request->customer_id, $request->currency_id, $request->amount, Auth::id());
+            if ($request->from_account_id) {
+                \App\Services\LedgerService::subtractBalance($transactionDate, 'ap', $cashFlow->id, 'account', $request->from_account_id, $request->currency_id, $request->amount, Auth::id());
+            }
+        } elseif ($request->type === 'ar') {
+            // AR: Customer pays us → add to their balance and our wallet
+            \App\Services\LedgerService::addBalance($transactionDate, 'ar', $cashFlow->id, 'customer', $request->customer_id, $request->currency_id, $request->amount, Auth::id());
+            if ($request->to_account_id) {
+                \App\Services\LedgerService::addBalance($transactionDate, 'ar', $cashFlow->id, 'account', $request->to_account_id, $request->currency_id, $request->amount, Auth::id());
+            }
+        } elseif ($request->type === 'ctc') {
+            // CTC: Transfer from sender to receiver
+            \App\Services\LedgerService::subtractBalance($transactionDate, 'ctc', $cashFlow->id, 'customer', $request->customer_id, $request->currency_id, $request->amount, Auth::id());
+            \App\Services\LedgerService::addBalance($transactionDate, 'ctc', $cashFlow->id, 'customer', $request->related_customer_id, $request->currency_id, $request->amount, Auth::id());
+        }
+
         ActivityLogService::log('cash_flow_created', "Created {$request->type} entry {$code}", $cashFlow);
 
-        return redirect()->route('dashboard')
+        return redirect()->route('cash-flows.index')
             ->with('success', "Cash Flow {$code} created successfully.");
     }
 
@@ -119,12 +183,19 @@ class CashFlowController extends Controller
     public function show($id)
     {
         $cashFlow = CashFlow::with(['customer', 'relatedCustomer', 'currency', 'creator', 'fromAccount', 'toAccount'])->findOrFail($id);
+
+        // Role-based access: agents can only view their own cash flows
+        $user = Auth::user();
+        if ($user->role !== 'admin' && $cashFlow->created_by !== $user->id) {
+            abort(403, 'You are not authorized to view this cash flow.');
+        }
+
         return view('cash-flows.show', compact('cashFlow'));
     }
 
     /**
      * Get Customer Balance (AJAX)
-     * Placeholder implementation - sums up cash flows for now.
+     * Reads from the customer_balances table.
      */
     public function getBalance(Request $request)
     {
@@ -133,81 +204,10 @@ class CashFlowController extends Controller
             'currency_id' => 'required|exists:currencies,id',
         ]);
 
-        $customerId = $request->customer_id;
-        $currencyId = $request->currency_id;
-
-        // Calculate Balance: AR (Money In) - AP (Money Out)
-        // Positive Balance = Customer Owes Us? OR We Owe Customer?
-        // Usually, in accounting: 
-        // AR = Debit (Asset, Customer owes us)
-        // AP = Credit (Liability, We owe customer)
-        // Let's define: Balance > 0 means Customer Owes Us.
-
-        $ar = CashFlow::where('customer_id', $customerId)
-            ->where('currency_id', $currencyId)
-            ->where('type', 'ar')
-            ->where('status', '!=', 'cancelled')
-            ->sum('amount');
-
-        $ap = CashFlow::where('customer_id', $customerId)
-            ->where('currency_id', $currencyId)
-            ->where('type', 'ap')
-            ->where('status', '!=', 'cancelled')
-            ->sum('amount');
-
-        // CTC: 
-        // Source (From) -> Increases Debt (They pay us to pay someone else? No.)
-        // CTC is "Customer A to Customer B".
-        // A sends money to B.
-        // If A sends money, A's balance with us...
-        // If we act as intermediary:
-        // A gives us money (AR from A) -> We give money to B (AP to B).
-        // A single CTC record implies: A's balance decreases (They spent money), B's increases (They received money).
-        // If "Balance" = "Amount Customer Owes Us" (Debit Balance)
-        // A Transfer to B:
-        // A's Debt Increases? No, A is paying. 
-        // Ideally: A has Credit with us. A Uses Credit to Pay B. A's Credit Decreases (Debt Increases).
-        // B Receives Credit. B's Credit Increases (Debt Decreases).
-
-        $ctcOut = CashFlow::where('customer_id', $customerId) // Sender
-            ->where('currency_id', $currencyId)
-            ->where('type', 'ctc')
-            ->where('status', '!=', 'cancelled')
-            ->sum('amount');
-
-        $ctcIn = CashFlow::where('related_customer_id', $customerId) // Receiver
-            ->where('currency_id', $currencyId)
-            ->where('type', 'ctc')
-            ->where('status', '!=', 'cancelled')
-            ->sum('amount');
-
-        // Net Balance (from Customer Perspective relative to Us)
-        // Let's assume a simplified "Wallet" view.
-        // Wallet Balance = (Money In) - (Money Out)
-        // Money In = AP (We pay them/Deposit) + CTC In
-        // Money Out = AR (They Withdraw/Pay Us) + CTC Out
-        // Wait, AP/AR names are tricky.
-        // AP = We Pay Customer. (Customer Balance Increases)
-        // AR = Customer Pays Us. (Customer Balance Decreases)
-
-        // Let's stick to "Owe Us" (Debt)
-        // Owe Us = (Services/FX Sales) - (Payments/AR) + (Withdrawals/AP)
-        // This is getting complex without FX.
-
-        // Let's just return the sums for now and let the UI interpret.
-
-        $balance = $ap - $ar + $ctcIn - $ctcOut;
-
-        // This is extremely rough.
+        $balance = \App\Services\LedgerService::getBalance('customer', $request->customer_id, $request->currency_id);
 
         return response()->json([
             'balance' => $balance,
-            'details' => [
-                'ar' => $ar,
-                'ap' => $ap,
-                'ctc_out' => $ctcOut,
-                'ctc_in' => $ctcIn
-            ]
         ]);
     }
 }

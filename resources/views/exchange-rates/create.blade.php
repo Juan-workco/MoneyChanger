@@ -48,6 +48,16 @@
                         </div>
 
                         <div class="form-row">
+                            <div class="form-group col-md-12">
+                                <label for="base_rate">Base Rate (Index Rate)</label>
+                                <input type="number" step="0.000001" class="form-control" id="base_rate"
+                                    placeholder="Optional. Enter base rate to auto-calculate margins.">
+                                <small class="form-text text-muted">Entering a base rate will automatically apply configured
+                                    buy/sell margins.</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
                             <div class="form-group col-md-6">
                                 <label for="buy_rate">Buy Rate <span class="text-danger">*</span></label>
                                 <input type="number" step="0.01"
@@ -99,4 +109,42 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        $(document).ready(function () {
+            let currentMargin = { buy_markup: 0, sell_markup: 0, auto_apply: 0 };
+
+            function fetchMargin() {
+                let fromId = $('input[name="currency_from_id"]').val();
+                let toId = $('#currency_to_id').val();
+
+                if (fromId && toId) {
+                    $.get('{{ route("rate-margins.get-margin") }}', { from_id: fromId, to_id: toId }, function (data) {
+                        currentMargin = data;
+                        if (currentMargin.auto_apply && $('#base_rate').val()) {
+                            calculateRates();
+                        }
+                    });
+                }
+            }
+
+            function calculateRates() {
+                let baseRate = parseFloat($('#base_rate').val());
+                if (!isNaN(baseRate)) {
+                    let buyRate = baseRate + parseFloat(currentMargin.buy_markup);
+                    let sellRate = baseRate + parseFloat(currentMargin.sell_markup);
+                    $('#buy_rate').val(buyRate.toFixed(6));
+                    $('#sell_rate').val(sellRate.toFixed(6));
+                }
+            }
+
+            $('#currency_to_id').change(fetchMargin);
+
+            $('#base_rate').on('input', function () {
+                calculateRates();
+            });
+        });
+    </script>
 @endsection

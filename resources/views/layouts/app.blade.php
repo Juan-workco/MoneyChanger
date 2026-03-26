@@ -135,8 +135,8 @@
                         </a>
                     </li>
 
-                    <li class="nav-title">Reports</li>
                     @if(Auth::user()->hasPermission('view_reports'))
+                        <li class="nav-title">Reports</li>
                         <li class="nav-item">
                             <a class="nav-link {{ request()->is('reports/daily*') ? 'active' : '' }}"
                                 href="{{ route('reports.daily') }}">

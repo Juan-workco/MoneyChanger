@@ -3,7 +3,8 @@
 @section('title', 'Receiving Accounts - Money Changer Admin')
 
 @section('content')
-    <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
+    <div
+        class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Receiving Accounts</h1>
     </div>
 
@@ -18,6 +19,9 @@
                 </a>
                 <a href="{{ route('settings.payment-methods') }}" class="list-group-item list-group-item-action">
                     <i class="fas fa-credit-card mr-2"></i> Payment Methods
+                </a>
+                <a href="{{ route('settings.telegram') }}" class="list-group-item list-group-item-action">
+                    <i class="fab fa-telegram-plane mr-2"></i> Telegram
                 </a>
             </div>
         </div>
@@ -60,25 +64,25 @@
                                             @endif
                                         </td>
                                         @if(Auth::user()->hasPermission('manage_settings'))
-                                        <td>
-                                            <button class="btn btn-sm btn-info text-white edit-account-btn"
-                                                data-id="{{ $account->id }}" data-type="{{ $account->account_type }}"
-                                                data-bank="{{ $account->bank_name }}" data-name="{{ $account->account_name }}"
-                                                data-number="{{ $account->account_number }}"
-                                                data-currency="{{ $account->currency }}" data-active="{{ $account->is_active }}"
-                                                data-toggle="modal" data-target="#editAccountModal">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <form action="{{ route('settings.delete-account', $account->id) }}" method="POST"
-                                                class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('Are you sure you want to delete this account?')">
-                                                    <i class="fas fa-trash"></i>
+                                            <td>
+                                                <button class="btn btn-sm btn-info text-white edit-account-btn"
+                                                    data-id="{{ $account->id }}" data-type="{{ $account->account_type }}"
+                                                    data-bank="{{ $account->bank_name }}" data-name="{{ $account->account_name }}"
+                                                    data-number="{{ $account->account_number }}"
+                                                    data-currency="{{ $account->currency }}" data-active="{{ $account->is_active }}"
+                                                    data-toggle="modal" data-target="#editAccountModal">
+                                                    <i class="fas fa-edit"></i>
                                                 </button>
-                                            </form>
-                                        </td>
+                                                <form action="{{ route('settings.delete-account', $account->id) }}" method="POST"
+                                                    class="d-inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                        onclick="return confirm('Are you sure you want to delete this account?')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
                                         @endif
                                     </tr>
                                 @empty

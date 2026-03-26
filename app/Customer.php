@@ -72,6 +72,14 @@ class Customer extends Model
     }
 
     /**
+     * Get all currency balances for this customer
+     */
+    public function balances()
+    {
+        return $this->hasMany(CustomerBalance::class);
+    }
+
+    /**
      * Scope to get only active customers
      */
     public function scopeActive($query)

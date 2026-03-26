@@ -211,34 +211,34 @@
 
             function updateRemarks() {
                 var remarks = [];
-                
+
                 // Upline 1 Status
                 if (autoCalcUpline1) {
                     remarks.push("Upline 1: Auto-calculated (Pt: " + currentPoints.upline1 + ")");
                 } else {
                     remarks.push("Upline 1: Manual Override");
                 }
-                
+
                 // Upline 2 Status
                 if (autoCalcUpline2) {
                     remarks.push("Upline 2: Auto-calculated (Pt: " + currentPoints.upline2 + ")");
                 } else {
                     remarks.push("Upline 2: Manual Override");
                 }
-                
+
                 // Smart Update: Preserve user notes, replace system remarks
                 var currentNotes = $('#notes').val();
                 var lines = currentNotes.split('\n');
                 var keptLines = [];
-                
+
                 // Filter out existing system remarks
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].trim();
-                     if (line !== '' && !line.startsWith('Upline 1:') && !line.startsWith('Upline 2:')) {
+                    if (line !== '' && !line.startsWith('Upline 1:') && !line.startsWith('Upline 2:')) {
                         keptLines.push(lines[i]);
                     }
                 }
-                
+
                 // Combine: User Notes + New System Remarks
                 var newNotes = keptLines.concat(remarks).join('\n');
                 $('#notes').val(newNotes);

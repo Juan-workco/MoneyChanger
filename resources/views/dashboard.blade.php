@@ -25,7 +25,7 @@
                         </div>
                         <div class="col-md-4 text-center mb-3">
                             <a href="{{ route('cash-flows.create') }}" class="btn btn-info btn-block text-white">
-                                <i class="fas fa-exchange-alt fa-2x mb-2"></i><br>
+                                <i class="fas fa-dollar-sign fa-2x mb-2"></i><br>
                                 New Cash Flow (AP/AR/CTC)
                             </a>
                         </div>

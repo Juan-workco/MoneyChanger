@@ -19,6 +19,9 @@
             <a href="{{ route('settings.payment-methods') }}" class="list-group-item list-group-item-action active">
                 <i class="fas fa-credit-card mr-2"></i> Payment Methods
             </a>
+            <a href="{{ route('settings.telegram') }}" class="list-group-item list-group-item-action">
+                <i class="fab fa-telegram-plane mr-2"></i> Telegram
+            </a>
         </div>
     </div>
     

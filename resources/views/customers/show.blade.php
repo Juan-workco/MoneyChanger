@@ -93,6 +93,45 @@
                 </div>
             </div>
 
+            <!-- Currency Balances -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong><i class="fas fa-wallet"></i> Currency Balances</strong>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Currency</th>
+                                    <th class="text-right">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $nonZeroBalances = $customer->balances->filter(function($b) { return $b->balance != 0; });
+                                @endphp
+                                @forelse($nonZeroBalances as $bal)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ $bal->currency->code }}</strong>
+                                            <small class="text-muted">{{ $bal->currency->name }}</small>
+                                        </td>
+                                        <td class="text-right {{ $bal->balance < 0 ? 'text-danger' : 'text-success' }}">
+                                            {{ $bal->currency->symbol }}{{ number_format($bal->balance, 2) }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted">No balance records yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Recent Transactions -->
             <div class="card">
                 <div class="card-header">

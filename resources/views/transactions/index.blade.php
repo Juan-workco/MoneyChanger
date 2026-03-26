@@ -6,11 +6,9 @@
     <div
         class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 pt-sm-3">
         <h1>Transactions</h1>
-        @if(Auth::user()->hasPermission('manage_transactions'))
-            <a href="{{ route('transactions.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> New Transaction
-            </a>
-        @endif
+        <a href="{{ route('transactions.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Transaction
+        </a>
     </div>
 
     <!-- Bulk Actions Bar -->
@@ -67,8 +65,69 @@
         </div>
     </div>
 
-    <!-- Transactions Table -->
-    <div class="card">
+    {{-- ═══ Mobile Swipeable Card List (shown on mobile only) ═══ --}}
+    <div class="mobile-swipe-list">
+        @forelse($transactions as $transaction)
+            <div class="swipe-card" data-id="{{ $transaction->id }}" data-status="{{ $transaction->status }}">
+                {{-- Hidden action buttons revealed on swipe --}}
+                <div class="swipe-card-actions">
+                    <a href="{{ route('transactions.show', $transaction->id) }}" class="btn btn-sm btn-info text-white"><i
+                            class="fas fa-eye"></i></a>
+                    @if($transaction->status == 'pending')
+                        <form method="POST" action="{{ route('transactions.update-status', $transaction->id) }}"
+                            style="display:inline;">
+                            @csrf
+                            <button type="submit" name="status" value="accept" class="btn btn-sm btn-success"><i
+                                    class="fas fa-check"></i></button>
+                            <button type="submit" name="status" value="cancel" class="btn btn-sm btn-danger"><i
+                                    class="fas fa-times"></i></button>
+                        </form>
+                    @elseif($transaction->status == 'accept')
+                        <form method="POST" action="{{ route('transactions.update-status', $transaction->id) }}"
+                            style="display:inline;">
+                            @csrf
+                            <button type="submit" name="status" value="sent" class="btn btn-sm btn-primary"><i
+                                    class="fas fa-paper-plane"></i></button>
+                        </form>
+                    @endif
+                </div>
+                {{-- Main card content (slides left on swipe) --}}
+                <div class="swipe-card-content">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <a href="{{ route('transactions.show', $transaction->id) }}"
+                                class="txn-code">{{ $transaction->transaction_code }}</a>
+                            <span class="ml-2">
+                                @if($transaction->status == 'accept')
+                                    <span class="badge badge-success">Accepted</span>
+                                @elseif($transaction->status == 'pending')
+                                    <span class="badge badge-warning">Pending</span>
+                                @elseif($transaction->status == 'sent')
+                                    <span class="badge badge-info">Sent</span>
+                                @elseif($transaction->status == 'cancel')
+                                    <span class="badge badge-danger">Cancelled</span>
+                                @endif
+                            </span>
+                        </div>
+                        <small class="txn-meta">{{ $transaction->transaction_date->format('d M Y') }}</small>
+                    </div>
+                    <div class="txn-meta">{{ $transaction->customer->name }}</div>
+                    <div class="txn-amounts">
+                        <span>{{ number_format($transaction->amount_from, 2) }} {{ $transaction->currencyFrom->code }}</span>
+                        <i class="fas fa-arrow-right mx-1 text-muted" style="font-size:0.7em;"></i>
+                        <span>{{ number_format($transaction->amount_to, 2) }} {{ $transaction->currencyTo->code }}</span>
+                        <small class="text-muted ml-2">@ {{ number_format($transaction->sell_rate, 2) }}</small>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="text-center text-muted py-4">No transactions found.</div>
+        @endforelse
+        <div class="mt-3">{{ $transactions->links() }}</div>
+    </div>
+
+    {{-- ═══ Desktop Table (hidden on mobile) ═══ --}}
+    <div class="card desktop-table-wrap">
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -310,5 +369,121 @@
             document.body.appendChild(form);
             form.submit();
         });
+
+        // ─── Mobile Swipe Gesture (card-based) ─────────────────
+        (function () {
+            var cards = document.querySelectorAll('.swipe-card');
+            if (!cards.length) return;
+
+            var startX = 0, currentX = 0;
+
+            cards.forEach(function (card) {
+                var content = card.querySelector('.swipe-card-content');
+                var actionsEl = card.querySelector('.swipe-card-actions');
+                if (!content || !actionsEl) return;
+
+                var actionsWidth = 120;
+
+                card.addEventListener('touchstart', function (e) {
+                    startX = e.touches[0].clientX;
+                    currentX = startX;
+                    content.style.transition = 'none';
+                }, { passive: true });
+
+                card.addEventListener('touchmove', function (e) {
+                    currentX = e.touches[0].clientX;
+                    var diff = startX - currentX;
+                    if (diff > 0 && diff <= actionsWidth) {
+                        content.style.transform = 'translateX(-' + diff + 'px)';
+                    }
+                }, { passive: true });
+
+                card.addEventListener('touchend', function () {
+                    content.style.transition = 'transform 0.25s ease';
+                    var diff = startX - currentX;
+                    if (diff > 50) {
+                        content.style.transform = 'translateX(-' + actionsWidth + 'px)';
+                    } else {
+                        content.style.transform = 'translateX(0)';
+                    }
+                }, { passive: true });
+            });
+
+            // Close any open swipe when tapping elsewhere
+            document.addEventListener('touchstart', function (e) {
+                cards.forEach(function (card) {
+                    if (!card.contains(e.target)) {
+                        var c = card.querySelector('.swipe-card-content');
+                        if (c) {
+                            c.style.transition = 'transform 0.25s ease';
+                            c.style.transform = 'translateX(0)';
+                        }
+                    }
+                });
+            }, { passive: true });
+        })();
     </script>
+
+    <style>
+        /* ─ Mobile card list ─ */
+        .mobile-swipe-list {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-swipe-list {
+                display: block;
+            }
+
+            .desktop-table-wrap {
+                display: none;
+            }
+        }
+
+        .swipe-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            background: #fff;
+        }
+
+        .swipe-card-content {
+            position: relative;
+            z-index: 2;
+            background: #fff;
+            padding: 12px;
+            will-change: transform;
+        }
+
+        .swipe-card-actions {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: #e9ecef;
+            z-index: 1;
+        }
+
+        .swipe-card .txn-code {
+            font-weight: 700;
+            color: #20a8d8;
+        }
+
+        .swipe-card .txn-meta {
+            font-size: 0.85em;
+            color: #6c757d;
+        }
+
+        .swipe-card .txn-amounts {
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+    </style>
 @endsection

@@ -89,7 +89,9 @@ class CustomerController extends Controller
             ->where('is_active', true)
             ->get();
 
-        return view('customers.create', compact('agents', 'existingGroups', 'currencyPairs'));
+        $canManageUplines = Auth::user()->hasPermission('manage_customer_uplines');
+
+        return view('customers.create', compact('agents', 'existingGroups', 'currencyPairs', 'canManageUplines'));
     }
 
     /**
@@ -114,12 +116,20 @@ class CustomerController extends Controller
         $validated['is_active'] = $request->has('is_active') ? true : false;
         $validated['agent_id'] = Auth::id(); // Auto-assign logged-in user as agent
 
+        // Restrict upline/commission data if user lacks permission
+        $canManageUplines = Auth::user()->hasPermission('manage_customer_uplines');
+        if (!$canManageUplines) {
+            $validated['upline1_id'] = null;
+            $validated['upline2_id'] = null;
+            $request->request->remove('commissions');
+        }
+
         DB::beginTransaction();
         try {
             $customer = Customer::create($validated);
 
-            // Save commissions if present
-            if ($request->has('commissions')) {
+            // Save commissions if present and authorized
+            if ($canManageUplines && $request->has('commissions')) {
                 foreach ($request->commissions as $pairId => $data) {
                     // Upline 1 Point
                     if (isset($data['upline1']) && $data['upline1'] !== null) {
@@ -159,7 +169,8 @@ class CustomerController extends Controller
         $customer = Customer::with([
             'transactions' => function ($q) {
                 $q->orderBy('transaction_date', 'desc')->limit(50);
-            }
+            },
+            'balances.currency'
         ])->findOrFail($id);
 
         // Check permission for agents
@@ -214,7 +225,9 @@ class CustomerController extends Controller
             $existingCommissions[$comm->currency_pair_id][$comm->upline_level] = $comm->point_value;
         }
 
-        return view('customers.edit', compact('customer', 'agents', 'existingGroups', 'currencyPairs', 'existingCommissions'));
+        $canManageUplines = Auth::user()->hasPermission('manage_customer_uplines');
+
+        return view('customers.edit', compact('customer', 'agents', 'existingGroups', 'currencyPairs', 'existingCommissions', 'canManageUplines'));
     }
 
     /**
@@ -245,34 +258,41 @@ class CustomerController extends Controller
 
         $validated['is_active'] = $request->has('is_active') ? true : false;
 
+        // Strip incoming upline fields if user lacks permission
+        $canManageUplines = Auth::user()->hasPermission('manage_customer_uplines');
+        if (!$canManageUplines) {
+            unset($validated['upline1_id']);
+            unset($validated['upline2_id']);
+        }
+
         DB::beginTransaction();
         try {
             $customer->update($validated);
 
-            // Sync commissions
-            // Simplest way is delete all for this customer and re-create, or update existing
-            // Let's go with updateOrInsert approach or delete-create for simplicity on MVP
-            CustomerUplineCommission::where('customer_id', $customer->id)->delete();
+            // Sync commissions only if user has permission
+            if ($canManageUplines) {
+                CustomerUplineCommission::where('customer_id', $customer->id)->delete();
 
-            if ($request->has('commissions')) {
-                foreach ($request->commissions as $pairId => $data) {
-                    // Upline 1 Point
-                    if (isset($data['upline1']) && $data['upline1'] !== null) {
-                        CustomerUplineCommission::create([
-                            'customer_id' => $customer->id,
-                            'currency_pair_id' => $pairId,
-                            'upline_level' => 'upline1',
-                            'point_value' => $data['upline1']
-                        ]);
-                    }
-                    // Upline 2 Point
-                    if (isset($data['upline2']) && $data['upline2'] !== null) {
-                        CustomerUplineCommission::create([
-                            'customer_id' => $customer->id,
-                            'currency_pair_id' => $pairId,
-                            'upline_level' => 'upline2',
-                            'point_value' => $data['upline2']
-                        ]);
+                if ($request->has('commissions')) {
+                    foreach ($request->commissions as $pairId => $data) {
+                        // Upline 1 Point
+                        if (isset($data['upline1']) && $data['upline1'] !== null) {
+                            CustomerUplineCommission::create([
+                                'customer_id' => $customer->id,
+                                'currency_pair_id' => $pairId,
+                                'upline_level' => 'upline1',
+                                'point_value' => $data['upline1']
+                            ]);
+                        }
+                        // Upline 2 Point
+                        if (isset($data['upline2']) && $data['upline2'] !== null) {
+                            CustomerUplineCommission::create([
+                                'customer_id' => $customer->id,
+                                'currency_pair_id' => $pairId,
+                                'upline_level' => 'upline2',
+                                'point_value' => $data['upline2']
+                            ]);
+                        }
                     }
                 }
             }
@@ -327,5 +347,84 @@ class CustomerController extends Controller
             ->paginate(20);
 
         return view('customers.transactions', compact('customer', 'transactions'));
+    }
+
+    /**
+     * Show the merge customers form
+     */
+    public function mergeForm()
+    {
+        $customers = Customer::orderBy('name')->get();
+        return view('customers.merge', compact('customers'));
+    }
+
+    /**
+     * Merge secondary customer into primary customer
+     */
+    public function merge(Request $request)
+    {
+        $request->validate([
+            'primary_id' => 'required|exists:customers,id',
+            'secondary_id' => 'required|exists:customers,id|different:primary_id',
+        ]);
+
+        $primary = Customer::findOrFail($request->primary_id);
+        $secondary = Customer::findOrFail($request->secondary_id);
+
+        DB::beginTransaction();
+        try {
+            // Reassign sales orders
+            Transaction::where('customer_id', $secondary->id)
+                ->update(['customer_id' => $primary->id]);
+
+            // Reassign cash flows (AP/AR/CTC)
+            \App\CashFlow::where('from_customer_id', $secondary->id)
+                ->update(['from_customer_id' => $primary->id]);
+            \App\CashFlow::where('to_customer_id', $secondary->id)
+                ->update(['to_customer_id' => $primary->id]);
+
+            // Reassign contras
+            \App\Contra::where('customer_id', $secondary->id)
+                ->update(['customer_id' => $primary->id]);
+
+            // Reassign ledger entries
+            \App\LedgerEntry::where('customer_id', $secondary->id)
+                ->update(['customer_id' => $primary->id]);
+
+            // Merge customer balances
+            $secondaryBalances = \App\CustomerBalance::where('customer_id', $secondary->id)->get();
+            foreach ($secondaryBalances as $sBal) {
+                $pBal = \App\CustomerBalance::where('customer_id', $primary->id)
+                    ->where('currency_id', $sBal->currency_id)
+                    ->first();
+                if ($pBal) {
+                    $pBal->balance += $sBal->balance;
+                    $pBal->save();
+                } else {
+                    $sBal->customer_id = $primary->id;
+                    $sBal->save();
+                }
+            }
+            // Remove leftover secondary balances that were merged
+            \App\CustomerBalance::where('customer_id', $secondary->id)->delete();
+
+            // Reassign upline commissions
+            CustomerUplineCommission::where('customer_id', $secondary->id)
+                ->update(['customer_id' => $primary->id]);
+
+            // Deactivate secondary customer
+            $secondary->is_active = false;
+            $secondary->notes = ($secondary->notes ? $secondary->notes . "\n" : '') .
+                "[MERGED] Merged into {$primary->name} (ID:{$primary->id}) on " . now()->toDateTimeString();
+            $secondary->save();
+
+            DB::commit();
+
+            return redirect()->route('customers.show', $primary->id)
+                ->with('success', "Customer \"{$secondary->name}\" has been merged into \"{$primary->name}\" successfully.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error merging customers: ' . $e->getMessage())->withInput();
+        }
     }
 }

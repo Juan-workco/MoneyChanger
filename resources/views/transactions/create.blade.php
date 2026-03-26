@@ -34,22 +34,25 @@
 
                                 <div class="form-row">
                                     <div class="form-group col-md-6">
-                                        <label for="currency_from_display">From Currency (Base) <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="currency_from_display" 
-                                            value="{{ $defaultCurrency ? $defaultCurrency->code . ' - ' . $defaultCurrency->name : '' }}" 
-                                            readonly style="background-color: #e9ecef;">
-                                        <input type="hidden" name="currency_from_id" id="currency_from_id" value="{{ $defaultCurrency ? $defaultCurrency->id : '' }}">
-                                        <small class="form-text text-muted">Base currency from settings</small>
+                                        <label for="currency_from_id">From Currency <span class="text-danger">*</span></label>
+                                        <select class="form-control @if ($errors->has('currency_from_id'))is-invalid @endif"
+                                            id="currency_from_id" name="currency_from_id" required>
+                                            <option value="">Select From Currency</option>
+                                            @foreach($currencies as $currency)
+                                                <option value="{{ $currency->id }}" data-code="{{ $currency->code }}" {{ old('currency_from_id') == $currency->id ? 'selected' : '' }}>{{ $currency->code }} - {{ $currency->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        @if ($errors->has('currency_from_id'))
+                                            <div class="invalid-feedback d-block">{{ $errors->first('currency_from_id') }}</div>
+                                        @endif
+                                        <small class="form-text text-muted">Select From Currency first to filter To Currency</small>
                                     </div>
 
                                     <div class="form-group col-md-6">
                                         <label for="currency_to_id">To Currency <span class="text-danger">*</span></label>
                                         <select class="form-control @if ($errors->has('currency_to_id'))is-invalid @endif"
                                             id="currency_to_id" name="currency_to_id" required>
-                                            <option value="">Select Currency</option>
-                                            @foreach($currencies as $currency)
-                                                <option value="{{ $currency->id }}" data-code="{{ $currency->code }}" {{ old('currency_to_id') == $currency->id ? 'selected' : '' }}>{{ $currency->code }} - {{ $currency->name }}</option>
-                                            @endforeach
+                                            <option value="">Select To Currency</option>
                                         </select>
                                         @if ($errors->has('currency_to_id'))
                                             <div class="invalid-feedback d-block">{{ $errors->first('currency_to_id') }}</div>
@@ -177,6 +180,7 @@
         $(document).ready(function () {
             // Data passed from controller
             var currencyPairs = @json($currencyPairs);
+            var exchangeRates = @json($exchangeRates);
             var customerCommissions = {}; 
             
             // Build customer commission map efficiently
@@ -196,12 +200,58 @@
             var autoCalcUpline1 = true;
             var autoCalcUpline2 = true;
 
-            // Fetch exchange rate when currencies change
+            // When From Currency changes, fetch available To Currencies via AJAX
+            $('#currency_from_id').change(function() {
+                var fromCurrencyId = $(this).val();
+                var toSelect = $('#currency_to_id');
+                
+                // Reset To Currency
+                toSelect.empty().append('<option value="">Select To Currency</option>');
+                $('#sell_rate').val('');
+                $('#rate_display').text('Select currency pair');
+                $('#amount_to').val('');
+
+                if (fromCurrencyId) {
+                    $.ajax({
+                        url: "{{ route('transactions.available-to-currencies') }}",
+                        method: 'GET',
+                        data: { from_currency_id: fromCurrencyId },
+                        success: function(response) {
+                            if (response.currencies && response.currencies.length > 0) {
+                                response.currencies.forEach(function(currency) {
+                                    var oldVal = '{{ old("currency_to_id", "") }}';
+                                    var selected = (oldVal == currency.id) ? 'selected' : '';
+                                    toSelect.append(
+                                        '<option value="' + currency.id + '" data-code="' + currency.code + '" ' + selected + '>' + 
+                                        currency.code + ' - ' + currency.name + '</option>'
+                                    );
+                                });
+                                // If only one option, auto-select it
+                                if (response.currencies.length === 1) {
+                                    toSelect.val(response.currencies[0].id);
+                                    toSelect.trigger('change');
+                                }
+                            } else {
+                                toSelect.append('<option value="" disabled>No matching currencies</option>');
+                            }
+                        },
+                        error: function() {
+                            toSelect.append('<option value="" disabled>Error loading currencies</option>');
+                        }
+                    });
+                }
+            });
+
+            // Fetch exchange rate when To Currency changes
+            $('#currency_to_id').change(function() {
+                fetchExchangeRate();
+            });
+
             function fetchExchangeRate() {
                 const currencyFrom = $('#currency_from_id').val();
                 const currencyTo = $('#currency_to_id').val();
-                const toCode = $('#currency_to_id').find(':selected').data('code');
-                const fromCode = '{{ $defaultCurrency->code }}';
+                const fromCode = $('#currency_from_id').find(':selected').data('code') || '';
+                const toCode = $('#currency_to_id').find(':selected').data('code') || '';
 
                 detectCurrencyPair(currencyFrom, currencyTo);
 
@@ -219,7 +269,7 @@
                                 $('#sell_rate').val(rate);
                                 $('#rate_display').text(fromCode + ' to ' + toCode + ': ' + rate);
                                 calculateAmountTo();
-                                calculateCommissions(); // Recalc comms when rate changes
+                                calculateCommissions();
                             } else {
                                 $('#sell_rate').val('');
                                 $('#rate_display').html('<span class="text-danger">No rate found for this pair</span>');
@@ -235,16 +285,9 @@
                 }
             }
 
-            // Bind event listeners
-            $('#currency_from_id, #currency_to_id').change(fetchExchangeRate);
-
-            // Fetch on load if values exist
-            fetchExchangeRate();
-
             // Detect Currency Pair ID from selected currencies
             function detectCurrencyPair(baseId, targetId) {
                 currentPairId = null;
-                // Find pair in currencyPairs array
                 for (var i = 0; i < currencyPairs.length; i++) {
                     if (currencyPairs[i].base_currency_id == baseId && currencyPairs[i].target_currency_id == targetId) {
                         currentPairId = currencyPairs[i].id;
@@ -264,40 +307,32 @@
                 currentPoints.upline2 = 0;
 
                 if (currentPairId) {
-                    // Get System Default for this pair
                     var pair = currencyPairs.find(p => p.id == currentPairId);
                     
-                    // Check if commission is enabled for this pair
                     if (pair && pair.is_commission_enabled === false) {
                         currentPoints.upline1 = 0;
                         currentPoints.upline2 = 0;
                         
-                        // Disable inputs & update display
                         $('#upline1_commission_amount').prop('readonly', true).val('');
                         $('#upline2_commission_amount').prop('readonly', true).val('');
                         $('#upline1_point_display').text('Disabled');
                         $('#upline2_point_display').text('Disabled');
                         
-                        // Update Hidden Inputs
                         $('#upline1_point').val(0);
                         $('#upline2_point').val(0);
                         
-                        // Skip further calc
                         calculateCommissions();
                         return;
                     } else {
-                        // Re-enable inputs
                         $('#upline1_commission_amount').prop('readonly', false);
                         $('#upline2_commission_amount').prop('readonly', false);
                     }
 
                     var sysDefault = pair ? parseFloat(pair.default_point) : 0;
 
-                    // Set fallback defaults
                     currentPoints.upline1 = sysDefault;
                     currentPoints.upline2 = sysDefault;
 
-                    // Check Customer Overrides
                     if (customerId && customerCommissions[customerId] && customerCommissions[customerId][currentPairId]) {
                         var overrides = customerCommissions[customerId][currentPairId];
                         if (overrides.upline1 !== undefined && overrides.upline1 !== null) {
@@ -309,11 +344,9 @@
                     }
                 }
 
-                // Update UI Display
                 $('#upline1_point_display').text('Pt: ' + currentPoints.upline1);
                 $('#upline2_point_display').text('Pt: ' + currentPoints.upline2);
                 
-                // Update Hidden Inputs
                 $('#upline1_point').val(currentPoints.upline1);
                 $('#upline2_point').val(currentPoints.upline2);
 
@@ -325,7 +358,7 @@
                 updateEffectivePoints();
             });
 
-            // Calculate Amount To when Amount From changes (using keyup for real-time)
+            // Calculate Amount To when Amount From changes
             $('#amount_from, #sell_rate').on('keyup input', function () {
                 calculateAmountTo();
                 calculateCommissions();
@@ -353,19 +386,14 @@
                 var rate = parseFloat($('#sell_rate').val()) || 0;
 
                 if (amountFrom > 0 && rate > 0) {
-                    // Formula: (Amount / Rate) - (Amount / (Rate + Point))
-                    
-                    // Upline 1
                     if (autoCalcUpline1) {
                         var pt1 = currentPoints.upline1;
-                        // Avoid division by zero if rate + pt is 0
                         if (rate + pt1 !== 0) {
                             var comm1 = (amountFrom / rate) - (amountFrom / (rate + pt1));
                             $('#upline1_commission_amount').val(comm1.toFixed(2));
                         }
                     }
 
-                    // Upline 2
                     if (autoCalcUpline2) {
                         var pt2 = currentPoints.upline2;
                         if (rate + pt2 !== 0) {
@@ -381,41 +409,40 @@
             function updateRemarks() {
                 var remarks = [];
                 
-                // Upline 1 Status
                 if (autoCalcUpline1) {
                     remarks.push("Upline 1: Auto-calculated (Pt: " + currentPoints.upline1 + ")");
                 } else {
                     remarks.push("Upline 1: Manual Override");
                 }
                 
-                // Upline 2 Status
                 if (autoCalcUpline2) {
                     remarks.push("Upline 2: Auto-calculated (Pt: " + currentPoints.upline2 + ")");
                 } else {
                     remarks.push("Upline 2: Manual Override");
                 }
                 
-                // Smart Update: Preserve user notes, replace system remarks
                 var currentNotes = $('#notes').val();
                 var lines = currentNotes.split('\n');
                 var keptLines = [];
                 
-                // Filter out existing system remarks
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].trim();
                     if (line !== '' && !line.startsWith('Upline 1:') && !line.startsWith('Upline 2:')) {
-                        keptLines.push(lines[i]); // Keep user note (preserve original whitespace if desired, but trim check avoids empty lines abuse)
+                        keptLines.push(lines[i]);
                     }
                 }
                 
-                // Combine: User Notes + New System Remarks
                 var newNotes = keptLines.concat(remarks).join('\n');
                 $('#notes').val(newNotes);
             }
             
-            // Trigger update on load? 
-            // In create view, notes are empty, so it just populates.
+            // Trigger initial update
             updateRemarks();
+
+            // If old values exist (e.g. validation failed), re-trigger From Currency change
+            @if(old('currency_from_id'))
+                $('#currency_from_id').trigger('change');
+            @endif
         });
     </script>
 @endsection
