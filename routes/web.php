@@ -56,6 +56,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Cash Flows (AP/AR/CTC)
     Route::get('cash-flows/get-balance', 'CashFlowController@getBalance')->name('cash-flows.get-balance');
+    Route::post('cash-flows/{id}/verify', 'CashFlowController@verify')->name('cash-flows.verify')->middleware('permission:verify_cash_flows');
+    Route::post('cash-flows/{id}/reject', 'CashFlowController@reject')->name('cash-flows.reject')->middleware('permission:verify_cash_flows');
     Route::resource('cash-flows', 'CashFlowController');
 
     // Contra / Netting

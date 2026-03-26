@@ -101,13 +101,12 @@ class TelegramController extends Controller
     {
         $parts = explode(' ', $text, 2);
         if (count($parts) < 2 || empty(trim($parts[1]))) {
-            $this->sendMessage($setting->bot_token, $chatId, "Usage: /balance [Customer Name or Code]");
+            $this->sendMessage($setting->bot_token, $chatId, "Usage: /balance [Customer Name]");
             return;
         }
 
         $search = strip_tags(trim($parts[1]));
         $customer = Customer::where('name', 'LIKE', "%{$search}%")
-            ->orWhere('customer_code', $search)
             ->first();
 
         if (!$customer) {

@@ -63,8 +63,6 @@ class TransactionController extends Controller
 
         $transactions = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        log::debug($transactions);
-
         $customers = Customer::active()
             ->when(Auth::user()->isAgent(), function ($query) {
                 $query->where('agent_id', Auth::user()->id);

@@ -21,10 +21,13 @@ class CashFlow extends Model
         'notes',
         'status',
         'created_by',
+        'verified_by',
+        'verified_at',
     ];
 
     protected $dates = [
         'transaction_date',
+        'verified_at',
         'created_at',
         'updated_at',
     ];
@@ -95,6 +98,11 @@ class CashFlow extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function verifier()
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 
     public function fromAccount()

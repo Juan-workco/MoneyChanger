@@ -34,7 +34,7 @@
                                         <option value="">-- Select Primary --</option>
                                         @foreach($customers as $c)
                                             <option value="{{ $c->id }}" {{ old('primary_id') == $c->id ? 'selected' : '' }}>
-                                                {{ $c->name }} ({{ $c->customer_code ?? 'N/A' }})
+                                                {{ $c->name }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -60,7 +60,7 @@
                                         <option value="">-- Select Secondary --</option>
                                         @foreach($customers as $c)
                                             <option value="{{ $c->id }}" {{ old('secondary_id') == $c->id ? 'selected' : '' }}>
-                                                {{ $c->name }} ({{ $c->customer_code ?? 'N/A' }})
+                                                {{ $c->name }}
                                             </option>
                                         @endforeach
                                     </select>

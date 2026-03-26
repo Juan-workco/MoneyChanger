@@ -64,6 +64,20 @@ class ReportService
 
         $openingIncome = $openingIncomeQuery->sum('amount_to');
 
+        // Include CashFlow AR (Income)
+        $cfOpeningIncomeQuery = \App\CashFlow::where('status', 'completed')
+            ->where('type', 'ar')
+            ->where('transaction_date', '<', $startOfDay)
+            ->whereHas('currency', function ($q) use ($currency) {
+                $q->where('code', $currency);
+            });
+
+        if ($agentId) {
+            $cfOpeningIncomeQuery->where('created_by', $agentId);
+        }
+
+        $openingIncome += $cfOpeningIncomeQuery->sum('amount');
+
         // Expenses (Out)
         $openingExpenseQuery = Transaction::where('status', 'sent')
             ->where('transaction_date', '<', $startOfDay)
@@ -76,6 +90,20 @@ class ReportService
         }
 
         $openingExpense = $openingExpenseQuery->sum('amount_from');
+
+        // Include CashFlow AP (Expense)
+        $cfOpeningExpenseQuery = \App\CashFlow::where('status', 'completed')
+            ->where('type', 'ap')
+            ->where('transaction_date', '<', $startOfDay)
+            ->whereHas('currency', function ($q) use ($currency) {
+                $q->where('code', $currency);
+            });
+
+        if ($agentId) {
+            $cfOpeningExpenseQuery->where('created_by', $agentId);
+        }
+
+        $openingExpense += $cfOpeningExpenseQuery->sum('amount');
 
         $openingBalance = $openingIncome - $openingExpense;
 
@@ -92,6 +120,20 @@ class ReportService
 
         $todayIncome = $incomeQuery->sum('amount_to');
 
+        // Include CashFlow AR (Income)
+        $cfIncomeQuery = \App\CashFlow::where('status', 'completed')
+            ->where('type', 'ar')
+            ->whereBetween('transaction_date', [$startOfDay, $endOfDay])
+            ->whereHas('currency', function ($q) use ($currency) {
+                $q->where('code', $currency);
+            });
+
+        if ($agentId) {
+            $cfIncomeQuery->where('created_by', $agentId);
+        }
+
+        $todayIncome += $cfIncomeQuery->sum('amount');
+
         $expenseQuery = Transaction::where('status', 'sent')
             ->whereBetween('transaction_date', [$startOfDay, $endOfDay])
             ->whereHas('currencyFrom', function ($q) use ($currency) {
@@ -103,6 +145,20 @@ class ReportService
         }
 
         $todayExpense = $expenseQuery->sum('amount_from');
+
+        // Include CashFlow AP (Expense)
+        $cfExpenseQuery = \App\CashFlow::where('status', 'completed')
+            ->where('type', 'ap')
+            ->whereBetween('transaction_date', [$startOfDay, $endOfDay])
+            ->whereHas('currency', function ($q) use ($currency) {
+                $q->where('code', $currency);
+            });
+
+        if ($agentId) {
+            $cfExpenseQuery->where('created_by', $agentId);
+        }
+
+        $todayExpense += $cfExpenseQuery->sum('amount');
 
         $closingBalance = $openingBalance + $todayIncome - $todayExpense;
 
@@ -215,21 +271,48 @@ class ReportService
 
         // AP/AR/CTC transfers involving this customer
         $transfers = \App\CashFlow::where(function ($q) use ($customerId) {
-            $q->where('from_customer_id', $customerId)
-                ->orWhere('to_customer_id', $customerId);
+            $q->where('customer_id', $customerId)
+                ->orWhere('related_customer_id', $customerId);
         })
-            ->whereBetween('date', [$startDate, $endDate])
+            ->whereBetween('transaction_date', [$startDate, $endDate])
             ->with('currency')
             ->get()
             ->map(function ($cf) use ($customerId) {
-                $isFrom = $cf->from_customer_id == $customerId;
+                // If it's AP (Money out to customer) AND customer is the primary customer, Debit.
+                // If it's AR (Money in from customer) AND customer is the primary customer, Credit.
+                // If it's CTC (Customer to Customer), sender is customer_id (Debit), receiver is related_customer_id (Credit).
+                
+                $isPrimary = $cf->customer_id == $customerId;
+                $debit = 0;
+                $credit = 0;
+                
+                if ($cf->type === 'ap' && $isPrimary) {
+                    $debit = $cf->amount; // Our AP is paying the customer (reducing what they owe, or adding to their wallet) -- wait, from Customer's perspective, they receive money? 
+                    // Let's reflect actual ledger impact: In LedgerService, AP subtracts from customer balance. AR adds to customer balance.
+                    // If AP subtracts, it's a Debit (if balance is normal credit) or vice-versa. 
+                    // Let's mimic LedgerService: 
+                    // LedgerService: ap -> subtract balance 
+                    // LedgerService: ar -> add balance
+                    // LedgerService: ctc -> subtract from sender, add to receiver.
+                    // Statement view usually shows: Debit (decrease), Credit (increase).
+                    $debit = $cf->amount;
+                } elseif ($cf->type === 'ar' && $isPrimary) {
+                    $credit = $cf->amount;
+                } elseif ($cf->type === 'ctc') {
+                    if ($isPrimary) {
+                        $debit = $cf->amount; // Sender
+                    } else {
+                        $credit = $cf->amount; // Receiver
+                    }
+                }
+
                 return [
-                    'date' => $cf->date,
+                    'date' => $cf->transaction_date,
                     'type' => strtoupper($cf->type),
-                    'reference' => $cf->reference_no ?? ('CF-' . $cf->id),
-                    'description' => $cf->type . ' — ' . ($cf->currency->code ?? '?'),
-                    'debit' => $isFrom ? $cf->amount : 0,
-                    'credit' => !$isFrom ? $cf->amount : 0,
+                    'reference' => $cf->cash_flow_code,
+                    'description' => strtoupper($cf->type) . ' — ' . ($cf->currency->code ?? '?'),
+                    'debit' => $debit,
+                    'credit' => $credit,
                     'currency_from' => $cf->currency->code ?? '',
                     'currency_to' => $cf->currency->code ?? '',
                     'status' => $cf->status,
@@ -237,7 +320,7 @@ class ReportService
             });
 
         // Merge and sort chronologically
-        $entries = $salesOrders->merge($transfers)->sortBy('date')->values()->all();
+        $entries = collect(array_merge($salesOrders->toArray(), $transfers->toArray()))->sortBy('date')->values()->all();
 
         // Current balances
         $balances = \App\CustomerBalance::where('customer_id', $customerId)

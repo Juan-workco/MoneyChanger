@@ -16,7 +16,7 @@
                         <option value="">-- Select Customer --</option>
                         @foreach($customers as $c)
                             <option value="{{ $c->id }}" {{ $customerId == $c->id ? 'selected' : '' }}>
-                                {{ $c->name }} ({{ $c->customer_code ?? '' }})
+                                {{ $c->name }}
                             </option>
                         @endforeach
                     </select>
@@ -58,7 +58,7 @@
 
                 {{-- Transaction Entries --}}
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped table-sm mb-0">
+                    <table class="table table-bordered table-striped table-hover mb-0">
                         <thead class="thead-light">
                             <tr>
                                 <th>Date</th>
@@ -79,16 +79,20 @@
                                     </td>
                                     <td>{{ $entry['reference'] }}</td>
                                     <td>{{ $entry['description'] }}</td>
-                                    <td class="text-right">
+                                    <td class="text-right text-danger font-weight-bold">
                                         @if($entry['debit'] > 0)
                                             {{ number_format($entry['debit'], 4) }}
                                             <small class="text-muted">{{ $entry['currency_from'] }}</small>
+                                        @else
+                                            <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td class="text-right">
+                                    <td class="text-right text-success font-weight-bold">
                                         @if($entry['credit'] > 0)
                                             {{ number_format($entry['credit'], 4) }}
                                             <small class="text-muted">{{ $entry['currency_to'] }}</small>
+                                        @else
+                                            <span class="text-muted">-</span>
                                         @endif
                                     </td>
                                     <td>

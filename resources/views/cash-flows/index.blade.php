@@ -37,12 +37,21 @@
                             </option>
                         </select>
                     </div>
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-md-2">
+                        <label for="status">Status</label>
+                        <select class="form-control" name="status" id="status">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
                         <label for="search">Search Code</label>
                         <input type="text" class="form-control" name="search" id="search" placeholder="Search Code..."
                             value="{{ request('search') }}">
                     </div>
-                    <div class="form-group col-md-3 d-flex align-items-end">
+                    <div class="form-group col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-secondary mr-2">Filter</button>
                         <a href="{{ route('cash-flows.index') }}" class="btn btn-link">Reset</a>
                     </div>
@@ -60,6 +69,7 @@
                         <tr>
                             <th>Date</th>
                             <th>Code</th>
+                            <th>Status</th>
                             <th>Type</th>
                             <th>Customer (Primary)</th>
                             <th>Related (Secondary)</th>
@@ -80,6 +90,17 @@
                                     <a href="{{ route('cash-flows.show', $cf->id) }}">
                                         <strong>{{ $cf->cash_flow_code }}</strong>
                                     </a>
+                                </td>
+                                <td>
+                                    @if($cf->status === 'pending')
+                                        <span class="badge badge-warning">Pending</span>
+                                    @elseif($cf->status === 'completed')
+                                        <span class="badge badge-success">Completed</span>
+                                    @elseif($cf->status === 'cancelled')
+                                        <span class="badge badge-danger">Cancelled</span>
+                                    @else
+                                        <span class="badge badge-secondary">{{ ucfirst($cf->status) }}</span>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($cf->type == 'ap')

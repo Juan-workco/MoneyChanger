@@ -30,6 +30,10 @@ class CashFlowController extends Controller
             $query->where('type', $request->type);
         }
 
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
         if ($request->has('customer_id') && $request->customer_id) {
             $query->where(function ($q) use ($request) {
                 $q->where('customer_id', $request->customer_id)
@@ -152,24 +156,7 @@ class CashFlowController extends Controller
             'created_by' => Auth::id(),
         ]);
 
-        // Adjust balances using LedgerService
-        if ($request->type === 'ap') {
-            // AP: We pay customer → deduct from their balance and our wallet
-            \App\Services\LedgerService::subtractBalance($transactionDate, 'ap', $cashFlow->id, 'customer', $request->customer_id, $request->currency_id, $request->amount, Auth::id());
-            if ($request->from_account_id) {
-                \App\Services\LedgerService::subtractBalance($transactionDate, 'ap', $cashFlow->id, 'account', $request->from_account_id, $request->currency_id, $request->amount, Auth::id());
-            }
-        } elseif ($request->type === 'ar') {
-            // AR: Customer pays us → add to their balance and our wallet
-            \App\Services\LedgerService::addBalance($transactionDate, 'ar', $cashFlow->id, 'customer', $request->customer_id, $request->currency_id, $request->amount, Auth::id());
-            if ($request->to_account_id) {
-                \App\Services\LedgerService::addBalance($transactionDate, 'ar', $cashFlow->id, 'account', $request->to_account_id, $request->currency_id, $request->amount, Auth::id());
-            }
-        } elseif ($request->type === 'ctc') {
-            // CTC: Transfer from sender to receiver
-            \App\Services\LedgerService::subtractBalance($transactionDate, 'ctc', $cashFlow->id, 'customer', $request->customer_id, $request->currency_id, $request->amount, Auth::id());
-            \App\Services\LedgerService::addBalance($transactionDate, 'ctc', $cashFlow->id, 'customer', $request->related_customer_id, $request->currency_id, $request->amount, Auth::id());
-        }
+        // Balances will be adjusted when the cash flow is verified/completed.
 
         ActivityLogService::log('cash_flow_created', "Created {$request->type} entry {$code}", $cashFlow);
 
@@ -182,7 +169,7 @@ class CashFlowController extends Controller
      */
     public function show($id)
     {
-        $cashFlow = CashFlow::with(['customer', 'relatedCustomer', 'currency', 'creator', 'fromAccount', 'toAccount'])->findOrFail($id);
+        $cashFlow = CashFlow::with(['customer', 'relatedCustomer', 'currency', 'creator', 'fromAccount', 'toAccount', 'verifier'])->findOrFail($id);
 
         // Role-based access: agents can only view their own cash flows
         $user = Auth::user();
@@ -191,6 +178,81 @@ class CashFlowController extends Controller
         }
 
         return view('cash-flows.show', compact('cashFlow'));
+    }
+
+    /**
+     * Verify a pending cash flow (requires verify_cash_flows permission).
+     */
+    public function verify($id)
+    {
+        $user = Auth::user();
+        if (!$user->hasPermission('verify_cash_flows')) {
+            abort(403, 'You do not have permission to verify cash flows.');
+        }
+
+        $cashFlow = CashFlow::findOrFail($id);
+
+        if ($cashFlow->status !== 'pending') {
+            return back()->with('error', 'Only pending cash flows can be verified.');
+        }
+
+        $cashFlow->update([
+            'status'      => 'completed',
+            'verified_by' => $user->id,
+            'verified_at' => now(),
+        ]);
+
+        $transactionDate = $cashFlow->transaction_date;
+
+        // Adjust balances using LedgerService
+        if ($cashFlow->type === 'ap') {
+            // AP: We pay customer → deduct from their balance and our wallet
+            \App\Services\LedgerService::subtractBalance($transactionDate, 'ap', $cashFlow->id, 'customer', $cashFlow->customer_id, $cashFlow->currency_id, $cashFlow->amount, $user->id);
+            if ($cashFlow->from_account_id) {
+                \App\Services\LedgerService::subtractBalance($transactionDate, 'ap', $cashFlow->id, 'account', $cashFlow->from_account_id, $cashFlow->currency_id, $cashFlow->amount, $user->id);
+            }
+        } elseif ($cashFlow->type === 'ar') {
+            // AR: Customer pays us → add to their balance and our wallet
+            \App\Services\LedgerService::addBalance($transactionDate, 'ar', $cashFlow->id, 'customer', $cashFlow->customer_id, $cashFlow->currency_id, $cashFlow->amount, $user->id);
+            if ($cashFlow->to_account_id) {
+                \App\Services\LedgerService::addBalance($transactionDate, 'ar', $cashFlow->id, 'account', $cashFlow->to_account_id, $cashFlow->currency_id, $cashFlow->amount, $user->id);
+            }
+        } elseif ($cashFlow->type === 'ctc') {
+            // CTC: Transfer from sender to receiver
+            \App\Services\LedgerService::subtractBalance($transactionDate, 'ctc', $cashFlow->id, 'customer', $cashFlow->customer_id, $cashFlow->currency_id, $cashFlow->amount, $user->id);
+            \App\Services\LedgerService::addBalance($transactionDate, 'ctc', $cashFlow->id, 'customer', $cashFlow->related_customer_id, $cashFlow->currency_id, $cashFlow->amount, $user->id);
+        }
+
+        ActivityLogService::log('cash_flow_verified', "Verified cash flow {$cashFlow->cash_flow_code}", $cashFlow);
+
+        return back()->with('success', "Cash Flow {$cashFlow->cash_flow_code} has been verified and marked as completed.");
+    }
+
+    /**
+     * Reject a pending cash flow (requires verify_cash_flows permission).
+     */
+    public function reject($id)
+    {
+        $user = Auth::user();
+        if (!$user->hasPermission('verify_cash_flows')) {
+            abort(403, 'You do not have permission to reject cash flows.');
+        }
+
+        $cashFlow = CashFlow::findOrFail($id);
+
+        if ($cashFlow->status !== 'pending') {
+            return back()->with('error', 'Only pending cash flows can be rejected.');
+        }
+
+        $cashFlow->update([
+            'status'      => 'cancelled',
+            'verified_by' => $user->id,
+            'verified_at' => now(),
+        ]);
+
+        ActivityLogService::log('cash_flow_rejected', "Rejected cash flow {$cashFlow->cash_flow_code}", $cashFlow);
+
+        return back()->with('success', "Cash Flow {$cashFlow->cash_flow_code} has been rejected and marked as cancelled.");
     }
 
     /**

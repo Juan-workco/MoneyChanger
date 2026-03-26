@@ -161,6 +161,12 @@
                                 <i class="nav-icon fas fa-percentage"></i> Commission Report
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('reports/customer-statement*') ? 'active' : '' }}"
+                                href="{{ route('reports.customer-statement') }}">
+                                <i class="nav-icon fas fa-file-invoice"></i> Customer Statement
+                            </a>
+                        </li>
                     @endif
 
                     @if(Auth::user()->hasPermission('view_currencies') || Auth::user()->hasPermission('view_exchange_rates') || Auth::user()->hasPermission('manage_users') || Auth::user()->hasPermission('manage_roles'))
