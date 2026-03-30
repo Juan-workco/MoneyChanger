@@ -76,16 +76,20 @@ class TelegramController extends Controller
             $text = trim($update['message']['text']);
             $chatId = $update['message']['chat']['id'];
 
-            if (\strpos($text, '/balance') === 0) {
-                $this->handleBalance($setting, $chatId, $text);
-            } elseif (\strpos($text, '/rate') === 0) {
-                $this->handleRate($setting, $chatId);
+            if (\strpos($text, '/start') === 0 || \strpos($text, '/help') === 0) {
+                $this->handleStart($setting, $chatId);
+            } elseif (\strpos($text, '/createorder') === 0) {
+                $this->handleCreateOrder($setting, $chatId);
             } elseif (\strpos($text, '/commission') === 0) {
                 $this->handleCommission($setting, $chatId, $update);
-            } elseif (\strpos($text, '/status') === 0) {
-                $this->handleStatus($setting, $chatId, $text);
-            } elseif (\strpos($text, '/neworder') === 0) {
-                $this->handleNewOrder($setting, $chatId);
+            } elseif (\strpos($text, '/transaction') === 0) {
+                $this->handleTransaction($setting, $chatId, $text);
+            } elseif (\strpos($text, '/balance') === 0) {
+                $this->handleBalance($setting, $chatId, $text);
+            } elseif (\strpos($text, '/settings') === 0) {
+                $this->handleSettings($setting, $chatId);
+            } elseif (\strpos($text, '/rate') === 0) {
+                $this->handleRate($setting, $chatId);
             }
         }
 
@@ -193,13 +197,31 @@ class TelegramController extends Controller
     }
 
     /**
-     * /status [OrderID] — Check a specific order's status
+     * /start or /help — Welcome message and show all commands
      */
-    private function handleStatus($setting, $chatId, $text)
+    private function handleStart($setting, $chatId)
+    {
+        $msg = "👋 *Welcome to Money Changer Bot!*\n";
+        $msg .= "I can help you manage your transactions, check balances, and view commissions.\n\n";
+        $msg .= "🛠️ *Available Commands*\n";
+        $msg .= "• /start - Welcome message and show commands\n";
+        $msg .= "• /createorder - Create a new transaction\n";
+        $msg .= "• /commission - View your commission summary\n";
+        $msg .= "• /transaction [Order ID] - View transaction details\n";
+        $msg .= "• /balance [Customer Name] - View balance sheet\n";
+        $msg .= "• /settings - Configure notification preferences\n";
+
+        $this->sendMessage($setting->bot_token, $chatId, $msg, 'Markdown');
+    }
+
+    /**
+     * /transaction [OrderID] — View transaction details
+     */
+    private function handleTransaction($setting, $chatId, $text)
     {
         $parts = explode(' ', $text, 2);
         if (count($parts) < 2 || empty(trim($parts[1]))) {
-            $this->sendMessage($setting->bot_token, $chatId, "Usage: /status [Order ID]");
+            $this->sendMessage($setting->bot_token, $chatId, "Usage: /transaction [Order ID]");
             return;
         }
 
@@ -225,13 +247,26 @@ class TelegramController extends Controller
     }
 
     /**
-     * /neworder — Provide a link to create a new order
+     * /createorder — Create a new transaction
      */
-    private function handleNewOrder($setting, $chatId)
+    private function handleCreateOrder($setting, $chatId)
     {
         $url = url('/transactions/create');
         $msg = "📝 *Create New Order*\n";
         $msg .= "Click the link below to create a new Sales Order:\n";
+        $msg .= $url;
+
+        $this->sendMessage($setting->bot_token, $chatId, $msg, 'Markdown');
+    }
+
+    /**
+     * /settings — Configure notification preferences
+     */
+    private function handleSettings($setting, $chatId)
+    {
+        $url = url('/settings/telegram');
+        $msg = "⚙️ *Notification Settings*\n";
+        $msg .= "You can configure your Telegram notification preferences in the web application:\n";
         $msg .= $url;
 
         $this->sendMessage($setting->bot_token, $chatId, $msg, 'Markdown');
