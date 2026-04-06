@@ -55,9 +55,9 @@
 
                         <div class="form-group">
                             <label for="effective_date">Effective Date <span class="text-danger">*</span></label>
-                            <input type="datetime-local" class="form-control {{ $errors->has('effective_date') ? 'is-invalid' : '' }}"
+                            <input type="datetime-local" step="1" class="form-control {{ $errors->has('effective_date') ? 'is-invalid' : '' }}"
                                 id="effective_date" name="effective_date"
-                                value="{{ old('effective_date', $exchangeRate->effective_date->format('Y-m-d\TH:i')) }}"
+                                value="{{ old('effective_date', $exchangeRate->effective_date->format('Y-m-d\TH:i:s')) }}"
                                 required>
                             @if ($errors->has('effective_date'))
                                 <div class="invalid-feedback">{{ $errors->first('effective_date') }}</div>

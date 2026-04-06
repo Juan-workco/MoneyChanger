@@ -122,6 +122,8 @@ class TransactionController extends Controller
 
         DB::beginTransaction();
         try {
+            $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
+
             // Get active exchange rate
             $exchangeRate = ExchangeRate::getActiveRate(
                 $request->currency_from_id,
@@ -141,7 +143,6 @@ class TransactionController extends Controller
             $amountTo = $request->amount_from * $sellRate;
 
             // Check for Backdating
-            $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
             $isBackdated = $transactionDate->startOfDay()->lt(\Carbon\Carbon::today());
 
             // Check if Day is Closed

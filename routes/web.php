@@ -28,6 +28,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/', 'DashboardController@index')->name('dashboard');
     Route::get('/dashboard', 'DashboardController@index');
 
+    // My Profile (accessible to all authenticated users)
+    Route::get('/profile', 'ProfileController@index')->name('profile.index');
+    Route::put('/profile', 'ProfileController@update')->name('profile.update');
+
     // Currency Management
     Route::resource('currencies', 'CurrencyController');
     Route::post('currencies/{id}/activate', 'CurrencyController@activate')->name('currencies.activate');

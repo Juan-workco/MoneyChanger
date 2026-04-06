@@ -38,7 +38,7 @@
                     <tbody>
                         @forelse($rates as $rate)
                             <tr>
-                                <td>{{ $rate->effective_date->format('Y-m-d') }}</td>
+                                <td>{{ $rate->effective_date->format('Y-m-d H:i:s') }}</td>
                                 <td>{{ number_format($rate->buy_rate, 4) }}</td>
                                 <td>{{ number_format($rate->sell_rate, 4) }}</td>
                                 <td>

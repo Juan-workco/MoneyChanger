@@ -85,6 +85,9 @@
                     <div class="dropdown-header text-center">
                         <strong>Account</strong>
                     </div>
+                    <a class="dropdown-item" href="{{ route('profile.index') }}">
+                        <i class="fas fa-user-edit"></i> My Profile
+                    </a>
                     <a class="dropdown-item" href="{{ route('password.reset') }}">
                         <i class="fas fa-key"></i> Change Password
                     </a>

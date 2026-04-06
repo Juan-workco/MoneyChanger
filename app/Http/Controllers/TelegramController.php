@@ -38,7 +38,6 @@ class TelegramController extends Controller
 
         $validated = $request->validate([
             'bot_token' => 'required|string',
-            'default_group_id' => 'nullable|string',
         ]);
 
         $setting = TelegramSetting::first() ?: new TelegramSetting();
@@ -64,35 +63,82 @@ class TelegramController extends Controller
      */
     public function webhook(Request $request, $token)
     {
-        $setting = TelegramSetting::where('bot_token', $token)->where('is_active', true)->first();
-        if (!$setting) {
-            return response('Unauthorized or Inactive', 403);
-        }
-
-        $update = $request->all();
-        Log::info('Telegram Webhook Received:', $update);
-
-        if (isset($update['message']['text'])) {
-            $text = trim($update['message']['text']);
-            $chatId = $update['message']['chat']['id'];
-
-            if (\strpos($text, '/start') === 0 || \strpos($text, '/help') === 0) {
-                $this->handleStart($setting, $chatId);
-            } elseif (\strpos($text, '/createorder') === 0) {
-                $this->handleCreateOrder($setting, $chatId);
-            } elseif (\strpos($text, '/commission') === 0) {
-                $this->handleCommission($setting, $chatId, $update);
-            } elseif (\strpos($text, '/transaction') === 0) {
-                $this->handleTransaction($setting, $chatId, $text);
-            } elseif (\strpos($text, '/balance') === 0) {
-                $this->handleBalance($setting, $chatId, $text);
-            } elseif (\strpos($text, '/settings') === 0) {
-                $this->handleSettings($setting, $chatId);
-            } elseif (\strpos($text, '/rate') === 0) {
-                $this->handleRate($setting, $chatId);
+        // Always return 200 OK to Telegram — if we don't, Telegram will retry
+        // the same update endlessly, blocking all subsequent commands.
+        try {
+            $setting = TelegramSetting::where('bot_token', $token)->where('is_active', true)->first();
+            if (!$setting) {
+                return response('Unauthorized or Inactive', 403);
             }
+
+            $update = $request->all();
+            Log::info('Telegram Webhook Received:', $update);
+
+            // Auto-map chat_id to system user based on telegram_username
+            try {
+                if (isset($update['message']['from']['username'])) {
+                    $tgUsername = ltrim($update['message']['from']['username'], '@');
+                    $chatId = $update['message']['chat']['id'];
+                    $mappedUser = User::whereNotNull('telegram_username')
+                        ->where('telegram_active', true)
+                        ->get()
+                        ->first(function ($u) use ($tgUsername) {
+                            return ltrim($u->telegram_username, '@') === $tgUsername;
+                        });
+
+                    if ($mappedUser && $mappedUser->telegram_chat_id !== (string) $chatId) {
+                        $mappedUser->telegram_chat_id = (string) $chatId;
+                        $mappedUser->save();
+                        Log::info("Telegram: Auto-mapped chat_id {$chatId} to user {$mappedUser->username}");
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Telegram Webhook: Failed to auto-map chat_id. Error: ' . $e->getMessage(), [
+                    'update' => $update,
+                ]);
+            }
+
+            if (isset($update['message']['text'])) {
+                $text = trim($update['message']['text']);
+                $chatId = $update['message']['chat']['id'];
+
+                try {
+                    if (\strpos($text, '/start') === 0 || \strpos($text, '/help') === 0) {
+                        $this->handleStart($setting, $chatId);
+                    } elseif (\strpos($text, '/createorder') === 0) {
+                        $this->handleCreateOrder($setting, $chatId);
+                    } elseif (\strpos($text, '/commission') === 0) {
+                        $this->handleCommission($setting, $chatId, $update);
+                    } elseif (\strpos($text, '/transaction') === 0) {
+                        $this->handleTransaction($setting, $chatId, $text);
+                    } elseif (\strpos($text, '/balance') === 0) {
+                        $this->handleBalance($setting, $chatId, $text);
+                    } elseif (\strpos($text, '/settings') === 0) {
+                        $this->handleSettings($setting, $chatId);
+                    } elseif (\strpos($text, '/rate') === 0) {
+                        $this->handleRate($setting, $chatId);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Telegram Webhook: Command handler failed. Command: "' . $text . '". Error: ' . $e->getMessage(), [
+                        'chat_id' => $chatId,
+                        'trace'   => $e->getTraceAsString(),
+                    ]);
+                    // Notify the user so they know something went wrong, not just silence
+                    try {
+                        $this->sendMessage($setting->bot_token, $chatId, '⚠️ Sorry, something went wrong while processing your command. Please try again later.');
+                    } catch (\Exception $sendEx) {
+                        Log::error('Telegram Webhook: Failed to send error reply. Error: ' . $sendEx->getMessage());
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Last-resort catch — log and fall through to return 200 below
+            Log::error('Telegram Webhook: Unhandled exception. Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
+        // Always return 200 so Telegram does not retry this update
         return response('OK', 200);
     }
 
@@ -239,7 +285,7 @@ class TelegramController extends Controller
         $msg .= "Customer: {$tx->customer->name}\n";
         $msg .= "From: {$tx->amount_from} {$tx->currencyFrom->code}\n";
         $msg .= "To: {$tx->amount_to} {$tx->currencyTo->code}\n";
-        $msg .= "Rate: {$tx->exchange_rate}\n";
+        $msg .= "Rate: {$tx->sell_rate}\n";
         $msg .= "Status: *" . strtoupper($tx->status) . "*\n";
         $msg .= "Date: {$tx->transaction_date}";
 
@@ -281,8 +327,20 @@ class TelegramController extends Controller
     public static function notifyOrderEvent(Transaction $transaction, $eventType = 'created')
     {
         $setting = TelegramSetting::where('is_active', true)->first();
-        if (!$setting || empty($setting->default_group_id)) {
-            return; // No active Telegram config or no group set
+        if (!$setting) {
+            return; // No active Telegram config
+        }
+
+        // Find the agent who created this transaction and has Telegram active
+        $agent = $transaction->creator ?? null;
+        if (!$agent) {
+            // Try to load the relationship if not already loaded
+            $transaction->load('creator');
+            $agent = $transaction->creator;
+        }
+
+        if (!$agent || !$agent->telegram_active || empty($agent->telegram_chat_id)) {
+            return; // Agent not configured for Telegram notifications
         }
 
         $customer = $transaction->customer->name ?? 'N/A';
@@ -299,12 +357,12 @@ class TelegramController extends Controller
         $msg .= "Customer: {$customer}\n";
         $msg .= "From: {$transaction->amount_from} {$from}\n";
         $msg .= "To: {$transaction->amount_to} {$to}\n";
-        $msg .= "Rate: {$transaction->exchange_rate}\n";
+        $msg .= "Rate: {$transaction->sell_rate}\n";
         $msg .= "Status: *" . strtoupper($transaction->status) . "*\n";
-        $msg .= "By: " . (auth()->user()->name ?? 'System');
+        $msg .= "By: {$agent->name}";
 
         self::callTelegram("https://api.telegram.org/bot{$setting->bot_token}/sendMessage", [
-            'chat_id' => $setting->default_group_id,
+            'chat_id' => $agent->telegram_chat_id,
             'text' => $msg,
             'parse_mode' => 'Markdown',
         ]);

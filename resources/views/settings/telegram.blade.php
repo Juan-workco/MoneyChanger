@@ -45,13 +45,11 @@
                             </small>
                         </div>
 
-                        <div class="form-group">
-                            <label for="default_group_id" class="">Default Group ID</label>
-                            <input type="text" class="form-control" id="default_group_id" name="default_group_id"
-                                    value="{{ old('default_group_id', $setting->default_group_id) }}">
-                            <small class="form-text text-muted">The internal Chat ID of the Telegram group where order
-                                notifications should be sent (e.g., -1001234567890).
-                            </small>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Per-User Notifications:</strong> Notifications are sent directly to each agent's personal Telegram chat.
+                            Each agent must set their Telegram username in <a href="{{ route('profile.index') }}" class="alert-link">My Profile</a>
+                            and then message the bot to complete the mapping automatically.
                         </div>
 
                         <div class="form-group">

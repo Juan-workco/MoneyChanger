@@ -24,7 +24,10 @@ class User extends Authenticatable
         'role_id',
         'status',
         'super_admin',
-        'commission_rate'
+        'commission_rate',
+        'telegram_username',
+        'telegram_chat_id',
+        'telegram_active'
     ];
 
     /**
