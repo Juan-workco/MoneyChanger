@@ -215,9 +215,8 @@ class TelegramController extends Controller
      */
     private function handleCommission($setting, $chatId, $update)
     {
-        // Try to find the user by their telegram_chat_id
-        $telegramUserId = $update['message']['from']['id'] ?? null;
-        $user = User::where('telegram_chat_id', $telegramUserId)->first();
+        // Find the user by their telegram_chat_id
+        $user = User::where('telegram_chat_id', (string) $chatId)->first();
 
         if (!$user) {
             $this->sendMessage($setting->bot_token, $chatId, "❌ Your Telegram account is not linked to any system user. Please set your Telegram Chat ID in your profile.");
