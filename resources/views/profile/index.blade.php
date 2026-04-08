@@ -92,7 +92,7 @@
                             <div class="col-md-9">
                                 <input type="text" id="username" class="form-control-plaintext text-muted"
                                     value="{{ $user->username }}" readonly>
-                                <small class="text-muted">Username cannot be changed. Contact an administrator if needed.</small>
+                                <small class="text-muted">Username cannot be changed.</small>
                             </div>
                         </div>
                         <div class="form-group row">
