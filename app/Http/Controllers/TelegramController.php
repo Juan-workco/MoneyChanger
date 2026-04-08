@@ -113,8 +113,6 @@ class TelegramController extends Controller
                         $this->handleTransaction($setting, $chatId, $text);
                     } elseif (\strpos($text, '/balance') === 0) {
                         $this->handleBalance($setting, $chatId, $text);
-                    } elseif (\strpos($text, '/settings') === 0) {
-                        $this->handleSettings($setting, $chatId);
                     } elseif (\strpos($text, '/rate') === 0) {
                         $this->handleRate($setting, $chatId);
                     }
@@ -255,7 +253,6 @@ class TelegramController extends Controller
         $msg .= "• /commission - View your commission summary\n";
         $msg .= "• /transaction [Order ID] - View transaction details\n";
         $msg .= "• /balance [Customer Name] - View balance sheet\n";
-        $msg .= "• /settings - Configure notification preferences\n";
 
         $this->sendMessage($setting->bot_token, $chatId, $msg, 'Markdown');
     }
@@ -305,18 +302,7 @@ class TelegramController extends Controller
         $this->sendMessage($setting->bot_token, $chatId, $msg, 'Markdown');
     }
 
-    /**
-     * /settings — Configure notification preferences
-     */
-    private function handleSettings($setting, $chatId)
-    {
-        $url = url('/settings/telegram');
-        $msg = "⚙️ *Notification Settings*\n";
-        $msg .= "You can configure your Telegram notification preferences in the web application:\n";
-        $msg .= $url;
 
-        $this->sendMessage($setting->bot_token, $chatId, $msg, 'Markdown');
-    }
 
     // ─── Auto-Notification Dispatcher ──────────────────────────
 
