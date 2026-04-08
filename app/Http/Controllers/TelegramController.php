@@ -230,7 +230,7 @@ class TelegramController extends Controller
         $total = TransactionCommission::whereHas('transaction', function ($q) use ($startDate, $endDate) {
             $q->whereBetween('transaction_date', [$startDate, $endDate])
                 ->where('status', 'sent');
-        })->where('agent_id', $user->id)->sum('commission_amount');
+        })->where('user_id', $user->id)->sum('amount');
 
         $msg = "💰 *Commission Summary ({$month})*\n";
         $msg .= "Agent: {$user->name}\n";
